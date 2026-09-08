@@ -1,5 +1,9 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "mulcia-tfm-hllm-pipeline"
+name = "hllm-pipeline"
 version = "0.1.0"
 description = "Pipeline for generating CVRP heuristics with LLMs"
 requires-python = ">=3.10"
@@ -12,3 +16,8 @@ dependencies = [
 
 [dependency-groups]
 dev = []
+
+[tool.pyright]
+pythonVersion = "3.12"
+include = ["src", "scripts"]
+extraPaths = ["src"]

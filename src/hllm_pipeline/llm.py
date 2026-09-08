@@ -2,6 +2,7 @@ import requests
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
+from hllm_pipeline.utils import read_file
 import concurrent.futures
 import time
 import tiktoken
@@ -10,7 +11,21 @@ import tiktoken
 load_dotenv()
 
 ############################
-# GENERAL FUNCTIONS
+# PROMPT GENERATION
+############################
+
+def prompt_gen(template_path, vars):
+    
+    template = read_file(template_path)
+
+    for v in vars.items():
+        template = template.replace("{{ " + v[0] + " }}", v[1])
+    
+    return template
+
+
+############################
+# LLM CALL
 ############################
 
 def llm_generate(provider, model, prompt, temperature=None, response_format=None):
@@ -66,36 +81,41 @@ def ollama_generate(prompt, model="qwen2.5:7b", url = "http://localhost:11434/ap
     data = response.json()
     return data["response"]
 
-
-def openai_generate(prompt, model="gpt-5", api_key=os.getenv("OPENAI_KEY"), temperature=None, response_format=None):
-
+def openai_generate(prompt, model="gpt-5.6-sol", temperature=None, response_schema=None, api_key=None, reasoning_effort="medium"):
     try:
         load_dotenv()
+
+        api_key = api_key or os.getenv("OPENAI_KEY")
         client = OpenAI(api_key=api_key)
 
-        # Crear el diccionario base
         params = {
             "model": model,
-            "messages": [
-                {"role": "system", "content": "Eres un project manager especializado en proyectos de IO."},
-                {"role": "user", "content": prompt}
-            ]
+            "input": prompt,
+            "reasoning": {
+                "effort": reasoning_effort
+            },
         }
 
-        # Añadir temperatura solo si se especifica
         if temperature is not None:
             params["temperature"] = temperature
 
-        # Añadir formato de respuesta solo si se especifica
-        if response_format is not None:
-            params['response_format'] = response_format
+        if response_schema is not None:
+            params["text"] = {
+                "format": {
+                    "type": "json_schema",
+                    "name": "response",
+                    "schema": response_schema,
+                    "strict": True
+                }
+            }
 
-        response = client.chat.completions.create(**params)
-        
-        return response.choices[0].message.content
+        response = client.responses.create(**params)
 
-    except:
-        return f'{"content": [{"status":"ERROR"}]}'
+        return response.output_text
+
+    except Exception as e:
+        print(f"Error OpenAI: {e}")
+        return '{"content": [{"status": "ERROR"}]}'
 
 
 
@@ -162,4 +182,3 @@ def get_llm_model_price_map():
 
 def get_llm_model_price(slug):
     return get_llm_model_price_map().get(slug, None)
-    
