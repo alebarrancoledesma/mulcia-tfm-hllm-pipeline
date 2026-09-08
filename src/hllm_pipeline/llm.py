@@ -2,7 +2,7 @@ import requests
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
-from hllm_pipeline.utils import read_file
+from hllm_pipeline.utils import read_text_file
 import concurrent.futures
 import time
 import tiktoken
@@ -16,7 +16,7 @@ load_dotenv()
 
 def prompt_gen(template_path, vars):
     
-    template = read_file(template_path)
+    template = read_text_file(template_path)
 
     for v in vars.items():
         template = template.replace("{{ " + v[0] + " }}", v[1])
