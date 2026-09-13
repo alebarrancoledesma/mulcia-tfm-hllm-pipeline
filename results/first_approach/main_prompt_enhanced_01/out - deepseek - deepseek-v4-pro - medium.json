@@ -1,0 +1,18 @@
+{
+  "what": "The heuristic extracts CVRP-specific information once in new(): loc/visited facts are discovered by scanning semantic fact names, load/vehicles numeric IDs are discovered by looking for zero-ary numeric variables, routing costs are extracted primarily from grounded visit, visit-via-depot, and return-to-depot operators via metric_operator_cost_from_initial_values, and customer demands/capacity/max_vehicles are read from numeric variables when available. During evaluation it reads the current numeric state and propositional state, builds the unvisited set, computes a greedy capacitated routing completion using precomputed sorted nearest-neighbor lists, adds the final return trip to the depot, and adds a capacity/fleet infeasibility penalty if remaining demand cannot fit in the remaining current capacity plus the capacity of unused vehicles. Goal states return 0.0 and detected resource dead-ends return a large finite penalty.",
+  "why": "The representative instances show a single-depot capacitated vehicle routing problem with a small fleet, heterogeneous customer demands, explicit metric travel costs, and actions that distinguish direct visits from visit-via-depot transitions. A good heuristic must be sensitive to current location, current load, used vehicles, and the exact unvisited set. This design improves over simple unvisited-customer count or sum-of-min-depot-distances by using the actual operator costs and by simulating direct-versus-via-depot choices under capacity and fleet limits. It uses precomputed sorted adjacency lists so evaluation remains cheap across many search states.",
+  "design": [
+    "Operator-based travel-cost reconstruction from grounded visit and visit-via-depot actions",
+    "Precomputed nearest-neighbor sorted adjacency lists for fast greedy route completion",
+    "Capacitated greedy routing simulation that models direct visits, visit-via-depot reloads, and final return-to-depot",
+    "Capacity/fleet resource infeasibility detection with large finite dead-end penalty",
+    "Semantic fact discovery for loc and visited with numeric ID discovery for load and vehicles"
+  ],
+  "complexity": "Construction is O(m log n) for operator/fact scanning and sorting of neighbor lists, where m is the number of grounded routing operators and n is the number of customers. Evaluation is O(n^2) worst-case because the greedy simulation may scan sorted neighbor lists for each remaining customer, but no sorting or large per-state allocations are performed.",
+  "fallbacks": "Routing costs are extracted primarily from grounded operators. If some arcs remain missing, the constructor optionally reads PNE names of the form travel-cost(from,to). As a last resort, missing direct and via-depot arcs may be completed through the depot using known return-to-depot and depot-to-customer costs; missing final return costs are not assumed symmetric and instead lead to a large penalty if they are still unavailable at evaluation time.",
+  "known_limitations": [
+    "The greedy routing completion is myopic and may underestimate or overestimate long-term route savings compared with a full CVRP solution.",
+    "Capacity/fleet resource checking is only strong when demand, capacity, and max_vehicles can be discovered from numeric variables; otherwise direct-feasibility checks are weakened.",
+    "Evaluation is O(n^2) worst-case, which is acceptable for the target tens-of-customers distribution but less suitable for very large instances."
+  ]
+}

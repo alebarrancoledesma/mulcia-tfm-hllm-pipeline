@@ -33,7 +33,10 @@ def llm_generate(provider, model, prompt, temperature=None, response_format=None
     match provider:
 
         case "openai":
-            return openai_generate(prompt, model=model, temperature=temperature, response_format=response_format)
+            return openai_generate(prompt, model=model, temperature=temperature, response_schema=response_format)
+
+        case "deepseek":
+            return deepseek_generate(prompt, model=model, temperature=temperature, response_schema=response_format)
 
         case _:
             raise NotImplementedError(f"Provider '{provider}' is not supported.")
@@ -119,6 +122,44 @@ def openai_generate(prompt, model="gpt-5.6-sol", temperature=None, response_sche
 
 
 
+def deepseek_generate(prompt, model="deepseek-v4-pro", temperature=None, response_schema=None, api_key=None, reasoning_effort="medium"):
+    try:
+        load_dotenv()
+
+        api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
+        client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
+
+        params = {
+            "model": model,
+            "input": prompt,
+            "reasoning": {
+                "effort": reasoning_effort
+            },
+        }
+
+        if temperature is not None:
+            params["temperature"] = temperature
+
+        if response_schema is not None:
+            params["text"] = {
+                "format": {
+                    "type": "json_schema",
+                    "name": "response",
+                    "schema": response_schema,
+                    "strict": True
+                }
+            }
+
+        response = client.responses.create(**params)
+
+        return response.output_text
+
+    except Exception as e:
+        print(f"Error DeepSeek: {e}")
+        return '{"content": [{"status": "ERROR"}]}'
+
+
+
 def openai_generate_parallel(prompt_list, model="gpt-5", api_key=os.getenv("OPENAI_KEY"), temperature=None, response_format=None, requests_per_minute=30):
 
     result = []
@@ -129,7 +170,31 @@ def openai_generate_parallel(prompt_list, model="gpt-5", api_key=os.getenv("OPEN
         
         for n, prompt in enumerate(prompt_list):
             # Llamar a función síncrona de petición única
-            futures.append(executor.submit(openai_generate, prompt, model, api_key,temperature, response_format))
+            futures.append(executor.submit(openai_generate, prompt, model, temperature, response_format, api_key))
+
+            idx = n+1
+            print(f"Enviando prompt {idx}")
+
+            # Limitar rate per minute
+            time.sleep(60.0 / requests_per_minute)
+
+
+        result = [future.result() for future in futures]
+
+    return result
+
+
+def deepseek_generate_parallel(prompt_list, model="deepseek-v4-pro", api_key=os.getenv("DEEPSEEK_API_KEY"), temperature=None, response_format=None, requests_per_minute=30):
+
+    result = []
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+
+        futures = []
+        
+        for n, prompt in enumerate(prompt_list):
+            # Llamar a función síncrona de petición única
+            futures.append(executor.submit(deepseek_generate, prompt, model, temperature, response_format, api_key))
 
             idx = n+1
             print(f"Enviando prompt {idx}")

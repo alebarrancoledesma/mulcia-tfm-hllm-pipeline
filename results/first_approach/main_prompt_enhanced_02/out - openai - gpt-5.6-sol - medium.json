@@ -1,0 +1,26 @@
+{
+  "what": "The heuristic precomputes semantic customer location/visited facts, dynamic load and vehicle numeric IDs, customer demands, capacity, fleet limit, directed direct-visit costs, directed visit-via-depot costs, return costs, and minimum incoming arc costs. For each state it detects the current location and unvisited set, checks total residual fleet capacity, chooses the cheapest legal first direct or via-depot transition from the actual current state, adds a directed geometric continuation estimate and final depot return, then adds capacity-route and fleet-pressure components.",
+  "why": "The representative instances have tens of customers, a small fleet, capacity-constrained routes, heterogeneous demands, and dense explicit metric costs. Those patterns motivate an O(n) evaluation using precomputed directed arc summaries rather than per-state sorting or matrix reconstruction. The small fleet and frequent need for route changes motivate explicit residual-capacity, remaining-vehicle, and visit-via-depot handling. Heterogeneous demands motivate using remaining demand and current load rather than customer count. Grounded visit and visit-via-depot operators are the primary cost source because compiled travel PNEs can be complex. This is more informative than unvisited count because it uses customer identities, directed distances, load, location, and fleet state; more informative than independent depot-distance sums because it models the current direct transition and customer-to-customer connectivity; and more useful than a purely geometric estimate because it detects fleet-capacity dead ends and prices mandatory route reloads.",
+  "instance_patterns": [
+    "Single-depot CVRP with a goal requiring all customers visited and the vehicle returned to the depot",
+    "Tens of customers, making linear per-state evaluation preferable",
+    "Small fleet with capacity forcing multiple visit-via-depot route changes",
+    "Heterogeneous customer demands relative to vehicle capacity",
+    "Dense explicit pairwise travel-cost matrices that are symmetric in examples but treated as directed",
+    "Direct customer visits normally dominate while depot reload transitions remain essential for feasibility"
+  ],
+  "design": [
+    "Geometric routing estimate using a state-anchored legal first transition plus precomputed minimum incoming arcs",
+    "Capacity/resource lower-bound-style component using remaining demand, residual load, capacity, and remaining vehicles",
+    "Operator-based directed travel-cost reconstruction",
+    "Dead-end detection for insufficient remaining fleet capacity",
+    "Precomputed arc summaries and reusable numeric/remaining-customer scratch buffers"
+  ],
+  "complexity": "O(n) time and O(n) reusable scratch space per heuristic evaluation, where n is the number of customers.",
+  "fallbacks": "Grounded visit, visit-via-depot, and return-to-depot operator costs are used first. Missing directed travel arcs are filled only from preserved travel-cost PNEs. Missing via-depot costs are then reconstructed from known directed customer-to-depot and depot-to-customer legs. Construction fails with a clear HeuristicBuildError if customer demands, resource limits, semantic facts, or essential directed depot arcs remain unavailable. Runtime states with no legal completion transition receive a large finite penalty.",
+  "known_limitations": [
+    "The continuation term sums independent minimum incoming arcs and therefore does not enforce a globally consistent tour.",
+    "The capacity activation and fleet-pressure terms are deliberately non-admissible and may double-count part of the depot routing cost.",
+    "The aggregate demand feasibility test does not detect every bin-packing infeasibility caused by combinations of large individual demands."
+  ]
+}

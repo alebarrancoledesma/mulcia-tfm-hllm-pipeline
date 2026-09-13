@@ -1,0 +1,18 @@
+{
+  "what": "The heuristic precomputes semantic loc/visited fact mappings, dynamic load and vehicles IDs, customer demands, capacity, fleet limit, directed direct-visit costs, via-depot costs, return costs, and a directed nearest-neighbour customer cycle. For each state it reads the current location, load, vehicles used, and unvisited set; rejects fleet-capacity dead ends; simulates a completion along the precomputed cycle using direct visits when demand fits and visit-via-depot transitions otherwise; adds the final depot return; and adds separate capacity and fleet-pressure components.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with tens of heterogeneous-demand customers, an explicit metric travel-cost matrix, a small vehicle limit, and a goal requiring both complete visitation and return to the depot. Those patterns motivate a directed routing estimate combined with load and fleet reasoning, especially the distinction between cheap direct visits and depot reload transitions. It is more informative than unvisited count because it prices actual directed travel, more informative than a sum of depot distances because it uses customer-to-customer structure and the current location, and more robust than a purely geometric estimate because load, remaining demand, vehicles used, residual capacity, and fleet infeasibility all affect the value.",
+  "design": [
+    "Operator-based travel-cost reconstruction from grounded visit, visit-via-depot, and return-to-depot actions",
+    "Precomputed directed nearest-neighbour customer ordering for linear-time state evaluation",
+    "Capacitated greedy routing completion using current location and load",
+    "Capacity/resource lower-bound components using remaining demand and residual fleet capacity",
+    "Finite-penalty dead-end detection for capacity or fleet infeasibility"
+  ],
+  "complexity": "O(n) per state, with O(n) reusable scratch space. Construction uses O(n^2) memory and O(n^2) nearest-neighbour preprocessing.",
+  "fallbacks": "Grounded operator costs are the primary source. Missing direct travel arcs are next recovered from travel-cost PNEs when available. Still-missing customer arcs are conservatively filled through known directed depot legs, and missing via-depot costs are reconstructed as customer-to-depot plus depot-to-customer. No symmetry is assumed. Construction fails with a clear HeuristicBuildError if essential demands, resources, depot legs, or routing arcs remain unavailable.",
+  "known_limitations": [
+    "The fixed nearest-neighbour cycle is inexpensive but can misrepresent the best remaining ordering after an unusual visitation prefix.",
+    "The capacity and fleet-pressure terms intentionally double-count some route pressure already present in the simulated completion, so the estimate is not admissible.",
+    "Static demands, capacity, and fleet limit must remain semantically identifiable in the task numeric variables; construction fails rather than inventing unsafe resource values when they cannot be recovered."
+  ]
+}
