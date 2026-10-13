@@ -1,0 +1,57 @@
+   Compiling planforge-llm-cvrp v0.1.0 (/mnt/c/Code/GitHub/TFM/mulcia-tfm-PlanForge/experiments/llm-cvrp-runner)
+error[E0277]: `&&Vec<Operator>` is not an iterator
+   --> experiments/llm-cvrp-runner/src/main.rs:167:19
+    |
+167 |         for op in &ops {
+    |                   ^^^^ `&&Vec<Operator>` is not an iterator
+    |
+    = help: the trait `Iterator` is not implemented for `&&Vec<Operator>`
+    = note: required for `&&Vec<Operator>` to implement `IntoIterator`
+help: consider removing the leading `&`-reference
+    |
+167 -         for op in &ops {
+167 +         for op in ops {
+    |
+
+error[E0277]: `&&Vec<Operator>` is not an iterator
+   --> experiments/llm-cvrp-runner/src/main.rs:187:19
+    |
+187 |         for op in &ops {
+    |                   ^^^^ `&&Vec<Operator>` is not an iterator
+    |
+    = help: the trait `Iterator` is not implemented for `&&Vec<Operator>`
+    = note: required for `&&Vec<Operator>` to implement `IntoIterator`
+help: consider removing the leading `&`-reference
+    |
+187 -         for op in &ops {
+187 +         for op in ops {
+    |
+
+error[E0277]: `&&Vec<Operator>` is not an iterator
+   --> experiments/llm-cvrp-runner/src/main.rs:258:23
+    |
+258 |             for op in &ops {
+    |                       ^^^^ `&&Vec<Operator>` is not an iterator
+    |
+    = help: the trait `Iterator` is not implemented for `&&Vec<Operator>`
+    = note: required for `&&Vec<Operator>` to implement `IntoIterator`
+help: consider removing the leading `&`-reference
+    |
+258 -             for op in &ops {
+258 +             for op in ops {
+    |
+
+warning: value assigned to `load` is never read
+   --> experiments/llm-cvrp-runner/src/main.rs:524:17
+    |
+524 |                 load = 0.0;
+    |                 ^^^^^^^^^^ this value is reassigned later and never used
+...
+530 |                     load = self.demand[node];
+    |                     ------------------------ `load` is overwritten here before the previous value is read
+    |
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+For more information about this error, try `rustc --explain E0277`.
+warning: `planforge-llm-cvrp` (bin "planforge-llm-cvrp") generated 1 warning
+error: could not compile `planforge-llm-cvrp` (bin "planforge-llm-cvrp") due to 3 previous errors; 1 warning emitted

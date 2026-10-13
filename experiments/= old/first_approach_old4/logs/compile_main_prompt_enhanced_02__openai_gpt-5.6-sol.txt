@@ -1,0 +1,2 @@
+   Compiling planforge-llm-cvrp v0.1.0 (/mnt/c/Code/GitHub/TFM/mulcia-tfm-PlanForge/experiments/llm-cvrp-runner)
+    Finished `release` profile [optimized] target(s) in 30.30s

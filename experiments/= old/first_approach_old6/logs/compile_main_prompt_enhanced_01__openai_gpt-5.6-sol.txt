@@ -1,0 +1,14 @@
+   Compiling planforge-llm-cvrp v0.1.0 (/mnt/c/Code/GitHub/TFM/mulcia-tfm-PlanForge/experiments/llm-cvrp-runner)
+error[E0689]: can't call method `max` on ambiguous numeric type `{float}`
+   --> experiments/llm-cvrp-runner/src/main.rs:580:41
+    |
+580 |             largest_link = largest_link.max(link);
+    |                                         ^^^
+    |
+help: you must specify a type for this binding, like `f32`
+    |
+572 |         let mut largest_link: f32 = 0.0;
+    |                             +++++
+
+For more information about this error, try `rustc --explain E0689`.
+error: could not compile `planforge-llm-cvrp` (bin "planforge-llm-cvrp") due to 1 previous error

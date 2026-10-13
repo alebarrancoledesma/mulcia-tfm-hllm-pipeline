@@ -1,0 +1,43 @@
+[2m2026-09-13T17:32:18.095Z[0m [32m INFO[0m Generated 69 rules.
+[2m2026-09-13T17:32:18.342Z[0m [32m INFO[0m 514364 relevant atoms
+[2m2026-09-13T17:32:18.342Z[0m [32m INFO[0m 772311 auxiliary atoms
+[2m2026-09-13T17:32:18.342Z[0m [32m INFO[0m 1286675 final queue length
+[2m2026-09-13T17:32:18.342Z[0m [32m INFO[0m 1291512 total queue pushes
+[2m2026-09-13T17:32:18.361Z[0m [32m INFO[0m Grounding progress: 0 actions, 1286675 atoms, approximately 88.26 MiB held; collecting reachable facts.
+[2m2026-09-13T17:32:18.379Z[0m [32m INFO[0m Grounding progress: 990 actions, 1286675 atoms, approximately 89.80 MiB held; instantiating axioms.
+[2m2026-09-13T17:32:18.805Z[0m [32m INFO[0m Grounding complete: 990 actions, 1286675 atoms, approximately 89.80 MiB held (131.49 MiB peak).
+[2m2026-09-13T17:32:18.857Z[0m [32m INFO[0m Finding invariants...
+[2m2026-09-13T17:32:18.857Z[0m [32m INFO[0m 4 initial candidates
+[2m2026-09-13T17:32:18.857Z[0m [32m INFO[0m Found 0 invariants
+[2m2026-09-13T17:32:18.857Z[0m [32m INFO[0m Checking invariant weight...
+[2m2026-09-13T17:32:18.857Z[0m [32m INFO[0m Found 0 useful groups
+[2m2026-09-13T17:32:18.857Z[0m [32m INFO[0m Instantiating groups...
+[2m2026-09-13T17:32:18.858Z[0m [32m INFO[0m Collecting mutex groups...
+[2m2026-09-13T17:32:18.858Z[0m [32m INFO[0m Choosing groups...
+[2m2026-09-13T17:32:18.858Z[0m [32m INFO[0m 47 uncovered facts
+[2m2026-09-13T17:32:18.858Z[0m [32m INFO[0m Building translation key...
+[2m2026-09-13T17:32:21.308Z[0m [32m INFO[0m 968 effect conditions simplified
+[2m2026-09-13T17:32:21.308Z[0m [32m INFO[0m 0 implied preconditions added
+[2m2026-09-13T17:32:21.309Z[0m [32m INFO[0m Simplified global constraint to new variable ordering (23, 0)
+[2m2026-09-13T17:32:21.309Z[0m [32m INFO[0m 0 operators removed
+[2m2026-09-13T17:32:21.310Z[0m [32m INFO[0m 0 axioms removed
+[2m2026-09-13T17:32:21.310Z[0m [32m INFO[0m 0 propositions removed
+[2m2026-09-13T17:32:21.430Z[0m [32m INFO[0m Building causal graph...
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m The causal graph is not acyclic.
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m 64 variables of 64 necessary
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m 117 numeric variables of 136 necessary
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m 0 of 0 mutex groups necessary.
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m 990 of 990 operators necessary.
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m 23 of 23 axiom rules necessary.
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m 17 of 17 axiom functional comparison rules necessary.
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m 34 of 34 axiom functional assignment rules necessary.
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m Preprocessor facts: 128
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m Preprocessor derived variables: 19
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m Preprocessor task size: 7321
+[2m2026-09-13T17:32:21.431Z[0m [32m INFO[0m Building the SAS task...
+[2m2026-09-13T17:32:21.432Z[0m [32m INFO[0m done
+[2m2026-09-13T17:32:21.432Z[0m [32m INFO[0m Parsed numeric SAS output in: 3.345156651s
+[2m2026-09-13T17:32:21.432Z[0m [32m INFO[0m === Search Engine ===
+[2m2026-09-13T17:32:21.432Z[0m [32m INFO[0m File: /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/experiments/first_approach/../../data/processed/pddl/domain.pddl + /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/experiments/first_approach/../../data/processed/pddl/P/P-n23-k8.pddl (in-memory)
+[2m2026-09-13T17:32:21.432Z[0m [32m INFO[0m Variables: 64 regular, 117 numeric
+Error: Custom { kind: Other, error: "llm_001 could not recover capacity() from numeric task data" }

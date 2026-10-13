@@ -1,0 +1,18 @@
+{
+  "what": "The heuristic precomputes semantic loc/visited mappings, exact load and vehicles IDs, best-effort capacity/demand/fleet constants, and directed routing costs reconstructed primarily from grounded visit, visit-via-depot, and return-to-depot operators. For each state it combines three explicit components: a directed routing proxy containing the cheapest legal first transition, relaxed customer-to-customer edges, and a final depot return; a capacity-induced depot-reload estimate; and a fleet/load pressure term. It also detects aggregate-capacity, oversized-demand, and no-feasible-move dead ends.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with heterogeneous demands, explicit pairwise metric costs, a single depot, and materially different direct-visit versus depot-reload actions. This design therefore uses current location, visited customers, load, and vehicles rather than merely counting goals. It is more informative than unvisited count because it evaluates directed travel costs and route position; more informative than summing depot distances because it includes customer-to-customer structure and the current route; and more realistic than a purely geometric estimate because capacity exhaustion, required reloads, and remaining fleet can change both feasibility and routing cost.",
+  "design": [
+    "Geometric routing estimate using a directed relaxed path-forest proxy",
+    "Capacity/resource lower-bound-style estimate using residual capacity and remaining demand",
+    "Operator-based travel-cost reconstruction from grounded actions",
+    "Dead-end detection for fleet and capacity infeasibility",
+    "Static precomputation with reusable evaluation scratch buffers"
+  ],
+  "complexity": "O(n) per compute_heuristic() call after construction, plus state-vector materialization; no per-state sorting or task-wide rescanning is performed.",
+  "fallbacks": "Grounded operator costs are primary. Missing directed arcs are next filled from exactly parsed travel-cost(from,to) numeric names. Remaining via-depot arcs are derived only when both directed depot legs are known, and missing customer arcs may conservatively use that derived depot path. Construction fails clearly if mandatory depot departure or return legs remain unavailable. Missing capacity, demand, or max_vehicles exact names do not fail construction: capacity and fleet become permissively unbounded and missing demands become zero.",
+  "known_limitations": [
+    "The relaxed interior-edge proxy can connect to already visited customers conceptually and does not enforce one coherent completion tour.",
+    "The aggregate demand reload estimate does not solve bin packing, so heterogeneous demands may require more routes than estimated.",
+    "When the translator folds away demand, capacity, or fleet constants, resource reasoning degrades substantially and only a small dynamic pressure term remains."
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "what": "The heuristic precomputes a directed travel-cost model from grounded visit, visit-via-depot, and return-to-depot operators using metric_operator_cost_from_initial_values. It discovers loc/visited propositional facts and load/vehicles numeric ids once. For each evaluation it reads current location, load, vehicles, and the visited set, then computes a greedy capacitated routing completion. The routing simulation uses pre-sorted nearest-neighbor lists and distinguishes direct customer visits from via-depot new-vehicle transitions according to capacity and remaining vehicle count. A resource infeasibility check with optimalistic remaining fleet capacity returns a large finite penalty. For feasible states it returns greedy routing cost plus return-to-depot cost plus a small capacity-load term.",
+  "why": "The representative instances are fleet-limited capacitated CVRPs with explicit metric travel costs and separate direct and via-depot actions. A pure unvisited-customer count is uninformative because routing cost depends strongly on current location, load, fleet usage, and the remaining customer set. A sum of minimum depot distances also ignores intra-customer distances and the need to start new vehicles when load or fleet constraints force a via-depot transition. This design uses operator-extracted costs to approximate the actual route completion, precomputes all static network information, and adds explicit capacity/fleet information so that states with tight resources or poor current locations receive higher estimates. The fallback and nearest-list machinery keep evaluation cheap and robust across unseen instances from the same distribution.",
+  "design": [
+    "Operator-based travel-cost reconstruction from grounded actions",
+    "Greedy capacitated nearest-neighbor routing completion",
+    "Precomputed sorted nearest-neighbor adjacency lists",
+    "Resource infeasibility/capacity lower bound and dead-end detection",
+    "Reusable scratch buffers for state evaluation"
+  ],
+  "complexity": "Construction is O(F + V + G log G + n^2) where F is propositional facts, V is numeric variables, G is grounded operators, and n is customers. Each evaluation is O(n + r * k) where n is customers, k is the average scan length in pre-sorted nearest lists, and r is the number of remaining customers in the greedy simulation; worst-case scanning is O(n^2), but typical behavior is near O(n log n) due to pre-sorted adjacency lists.",
+  "fallbacks": "Primary costs come from grounded operators. If some directed arcs are still missing, the code tries a Phase B fallback over numeric variable names containing exact travel-cost( ... ) pairs. If direct customer-customer arcs remain missing after that, Phase C fills them via the depot when both legs are known. Construction fails only if the resulting matrix lacks depot ingress or egress connections. Missing optional capacity, demand, or max_vehicles signal variables degrade to permissive defaults (f64::MAX for capacity/max_vehicles, 0.0 for demand), and the heuristic still computes routing information.",
+  "known_limitations": [
+    "The greedy routing estimate is not admissible and may misjudge states where a non-greedy route would be substantially cheaper.",
+    "The resource infeasibility check uses an optimistic bound on available capacity and can miss sequencing-related dead ends when demands are heterogeneous and capacity is not exactly known.",
+    "Worst-case evaluation can become quadratic if many nearest candidates must be skipped due to capacity or already-visited customers."
+  ]
+}

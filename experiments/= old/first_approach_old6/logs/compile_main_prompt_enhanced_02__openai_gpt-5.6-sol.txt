@@ -1,0 +1,13 @@
+   Compiling planforge-llm-cvrp v0.1.0 (/mnt/c/Code/GitHub/TFM/mulcia-tfm-PlanForge/experiments/llm-cvrp-runner)
+warning: field `place_names` is never read
+  --> experiments/llm-cvrp-runner/src/main.rs:95:5
+   |
+94 | struct LlmHeuristic {
+   |        ------------ field in this struct
+95 |     place_names: Vec<String>,
+   |     ^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `planforge-llm-cvrp` (bin "planforge-llm-cvrp") generated 1 warning
+    Finished `release` profile [optimized] target(s) in 35.15s

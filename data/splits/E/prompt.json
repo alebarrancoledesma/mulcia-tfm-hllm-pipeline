@@ -1,0 +1,10 @@
+{
+  "family": "E",
+  "split": "prompt",
+  "description": "Instancias E asequibles que ve el LLM: easy E-n13-k4, medium E-n22-k4, hard E-n30-k3. No se usan E-n51/E-n76/E-n101 (cruzadas con P grande).",
+  "instances": [
+    "E-n13-k4",
+    "E-n22-k4",
+    "E-n30-k3"
+  ]
+}

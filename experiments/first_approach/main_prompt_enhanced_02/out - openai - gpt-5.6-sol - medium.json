@@ -1,0 +1,25 @@
+{
+  "what": "The heuristic precomputes a directed routing model from grounded `visit`, `visit-via-depot`, and `return-to-depot` operators using their metric costs. It discovers depot/customer location and visited facts from semantic fact names, resolves `load()` and `vehicles()` once, and reads capacity, fleet size, and heterogeneous demands only by safe exact numeric names with permissive defaults. It builds a directed nearest-neighbor spatial backbone once. For each state it filters visited customers, re-anchors the backbone at the cheapest currently executable transition, simulates direct visits and required depot reloads using current load and vehicles, adds the final depot return, and adds a separate aggregate capacity/fleet-pressure component. Resource-infeasible states receive a large finite penalty.",
+  "why": "The representative instances are depot-centered, fleet-limited capacitated routing problems with heterogeneous demands and dense explicit pairwise costs. That motivated operator-based directed cost reconstruction, rather than assuming symmetry or relying on fragile PNE parsing. Their varying demand-to-capacity ratios mean some instances permit long direct routes while others require frequent `visit-via-depot` transitions, so the completion explicitly updates load and vehicle usage under both action schemas. The instances contain tens of customers, motivating task-level matrix/backbone precomputation and an O(n) state evaluation without per-state sorting. This is more informative than an unvisited count because it responds to actual arc costs and location; more informative than summing depot distances because it models customer-to-customer routing and the current partial route; and more informative than a purely geometric estimate because residual capacity, heterogeneous demand, remaining fleet slots, reload costs, and resource dead ends affect the value.",
+  "instance_patterns": [
+    "Single-depot goal requiring every customer to be visited and the vehicle to finish at the depot",
+    "Fleet-limited capacitated routing with direct visits and explicit depot reload transitions",
+    "Dense explicit pairwise travel-cost structure that is often symmetric but must be treated as directed",
+    "Heterogeneous customer demands and substantially varying demand-to-capacity ratios",
+    "Tens of customers, making static precomputation and linear-time state evaluation desirable"
+  ],
+  "design": [
+    "Geometric routing estimate via a precomputed directed nearest-neighbor backbone that is filtered and re-anchored from each current state",
+    "Capacity/resource bound using remaining demand, residual load capacity, and remaining fleet capacity",
+    "Operator-based travel-cost reconstruction from grounded routing actions",
+    "Dead-end detection for aggregate fleet-capacity infeasibility, oversized demands, and unavailable legal transitions",
+    "Precomputed routing matrices and reusable scratch buffers"
+  ],
+  "complexity": "O(n) per state, where n is the number of customers; construction uses O(n^2) space and approximately O(n^2) time after operator scanning.",
+  "fallbacks": "Missing `capacity()`, `max_vehicles()`, or customer demand PNEs never abort construction: capacity and fleet size default to permissive maxima and demands default to zero, leaving the routing component operational. Grounded operators are the primary cost source. If direct or via-depot customer arcs are missing, the code fills only those arcs using known customer-to-depot plus depot-to-customer legs. Construction fails clearly if depot departures, final returns, or required transitions remain unusable; it does not substitute arbitrary constant distances.",
+  "known_limitations": [
+    "The filtered backbone is a fast constructive approximation and can misestimate states whose best remaining customer order differs substantially from that backbone.",
+    "When read-only demand, capacity, or fleet PNEs are folded away, resource reasoning degrades permissively and may miss true capacity dead ends.",
+    "The resource-pressure term intentionally double-counts some route-boundary pressure already represented by the simulated completion, so the heuristic is not admissible."
+  ]
+}

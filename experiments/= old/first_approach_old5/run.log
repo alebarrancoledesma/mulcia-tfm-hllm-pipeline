@@ -1,0 +1,54 @@
+builtins reutilizados de first_approach_old4 (no se relanzan)
+>>> blind  gbfs(blind())  P-n16-k8
+    solved=yes  t=13.802445  exp=5224907  cost=468.000000
+>>> blind  gbfs(blind())  P-n20-k2
+    solved=no  t=300.000010  exp=41007840  cost=
+>>> blind  gbfs(blind())  P-n23-k8
+    solved=no  t=300.000071  exp=26623782  cost=
+>>> ff  gbfs(ff())  P-n16-k8
+    solved=yes  t=0.418045  exp=81232  cost=540.000000
+>>> ff  gbfs(ff())  P-n20-k2
+    solved=yes  t=6.632133  exp=1407582  cost=529.000000
+>>> ff  gbfs(ff())  P-n23-k8
+    solved=no  t=  exp=  cost=
+>>> lmcutnumeric  gbfs(lmcutnumeric())  P-n16-k8
+    solved=no  t=  exp=  cost=
+>>> lmcutnumeric  gbfs(lmcutnumeric())  P-n20-k2
+    solved=no  t=  exp=  cost=
+>>> lmcutnumeric  gbfs(lmcutnumeric())  P-n23-k8
+    solved=no  t=  exp=  cost=
+relanzando 8 heurísticas LLM
+[1/8] copiando main_prompt__deepseek_deepseek-v4-pro -> runner
+>>> main_prompt__deepseek_deepseek-v4-pro  gbfs(llm_001())  P-n16-k8
+    solved=yes  t=7.896314  exp=2729263  cost=450.000000
+>>> main_prompt__deepseek_deepseek-v4-pro  gbfs(llm_001())  P-n20-k2
+solo openai, deepseek no se relanza (4 candidatos)
+[1/4] copiando main_prompt__openai_gpt-5.6-sol -> runner
+>>> main_prompt__openai_gpt-5.6-sol  gbfs(llm_001())  P-n16-k8
+    solved=yes  t=2.458160  exp=1400495  cost=537.000000
+>>> main_prompt__openai_gpt-5.6-sol  gbfs(llm_001())  P-n20-k2
+    solved=yes  t=11.466238  exp=4248322  cost=326.000000
+>>> main_prompt__openai_gpt-5.6-sol  gbfs(llm_001())  P-n23-k8
+    solved=no  t=  exp=  cost=
+[2/4] copiando main_prompt_enhanced_00__openai_gpt-5.6-sol -> runner
+>>> main_prompt_enhanced_00__openai_gpt-5.6-sol  gbfs(llm_001())  P-n16-k8
+    solved=yes  t=1.308089  exp=893575  cost=537.000000
+>>> main_prompt_enhanced_00__openai_gpt-5.6-sol  gbfs(llm_001())  P-n20-k2
+    solved=yes  t=5.902920  exp=2958234  cost=326.000000
+>>> main_prompt_enhanced_00__openai_gpt-5.6-sol  gbfs(llm_001())  P-n23-k8
+    solved=no  t=  exp=  cost=
+[3/4] copiando main_prompt_enhanced_01__openai_gpt-5.6-sol -> runner
+>>> main_prompt_enhanced_01__openai_gpt-5.6-sol  gbfs(llm_001())  P-n16-k8
+    solved=yes  t=0.553930  exp=449102  cost=490.000000
+>>> main_prompt_enhanced_01__openai_gpt-5.6-sol  gbfs(llm_001())  P-n20-k2
+    solved=yes  t=21.235171  exp=10103812  cost=451.000000
+>>> main_prompt_enhanced_01__openai_gpt-5.6-sol  gbfs(llm_001())  P-n23-k8
+    solved=no  t=  exp=  cost=
+[4/4] copiando main_prompt_enhanced_02__openai_gpt-5.6-sol -> runner
+>>> main_prompt_enhanced_02__openai_gpt-5.6-sol  gbfs(llm_001())  P-n16-k8
+    solved=yes  t=1.940834  exp=1246565  cost=548.000000
+>>> main_prompt_enhanced_02__openai_gpt-5.6-sol  gbfs(llm_001())  P-n20-k2
+    solved=yes  t=20.602876  exp=10049027  cost=431.000000
+>>> main_prompt_enhanced_02__openai_gpt-5.6-sol  gbfs(llm_001())  P-n23-k8
+    solved=no  t=  exp=  cost=
+listo: /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/experiments/first_approach/metrics.csv (4 openai, deepseek sin tocar)

@@ -1,0 +1,60 @@
+[2m2026-09-13T22:19:38.464Z[0m [32m INFO[0m Generated 69 rules.
+[2m2026-09-13T22:19:38.578Z[0m [32m INFO[0m 290555 relevant atoms
+[2m2026-09-13T22:19:38.578Z[0m [32m INFO[0m 436374 auxiliary atoms
+[2m2026-09-13T22:19:38.578Z[0m [32m INFO[0m 726929 final queue length
+[2m2026-09-13T22:19:38.578Z[0m [32m INFO[0m 730536 total queue pushes
+[2m2026-09-13T22:19:38.587Z[0m [32m INFO[0m Grounding progress: 0 actions, 726929 atoms, approximately 49.85 MiB held; collecting reachable facts.
+[2m2026-09-13T22:19:38.600Z[0m [32m INFO[0m Grounding progress: 741 actions, 726929 atoms, approximately 51.00 MiB held; instantiating axioms.
+[2m2026-09-13T22:19:38.797Z[0m [32m INFO[0m Grounding complete: 741 actions, 726929 atoms, approximately 51.00 MiB held (74.28 MiB peak).
+[2m2026-09-13T22:19:38.822Z[0m [32m INFO[0m Finding invariants...
+[2m2026-09-13T22:19:38.822Z[0m [32m INFO[0m 4 initial candidates
+[2m2026-09-13T22:19:38.822Z[0m [32m INFO[0m Found 0 invariants
+[2m2026-09-13T22:19:38.822Z[0m [32m INFO[0m Checking invariant weight...
+[2m2026-09-13T22:19:38.822Z[0m [32m INFO[0m Found 0 useful groups
+[2m2026-09-13T22:19:38.822Z[0m [32m INFO[0m Instantiating groups...
+[2m2026-09-13T22:19:38.822Z[0m [32m INFO[0m Collecting mutex groups...
+[2m2026-09-13T22:19:38.822Z[0m [32m INFO[0m Choosing groups...
+[2m2026-09-13T22:19:38.822Z[0m [32m INFO[0m 41 uncovered facts
+[2m2026-09-13T22:19:38.823Z[0m [32m INFO[0m Building translation key...
+[2m2026-09-13T22:19:39.895Z[0m [32m INFO[0m 722 effect conditions simplified
+[2m2026-09-13T22:19:39.895Z[0m [32m INFO[0m 0 implied preconditions added
+[2m2026-09-13T22:19:39.895Z[0m [32m INFO[0m Simplified global constraint to new variable ordering (20, 0)
+[2m2026-09-13T22:19:39.895Z[0m [32m INFO[0m 0 operators removed
+[2m2026-09-13T22:19:39.895Z[0m [32m INFO[0m 0 axioms removed
+[2m2026-09-13T22:19:39.895Z[0m [32m INFO[0m 0 propositions removed
+[2m2026-09-13T22:19:39.954Z[0m [32m INFO[0m Building causal graph...
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m The causal graph is not acyclic.
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m 56 variables of 56 necessary
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m 112 numeric variables of 131 necessary
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m 0 of 0 mutex groups necessary.
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m 741 of 741 operators necessary.
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m 20 of 20 axiom rules necessary.
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m 15 of 15 axiom functional comparison rules necessary.
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m 30 of 30 axiom functional assignment rules necessary.
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m Preprocessor facts: 112
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m Preprocessor derived variables: 17
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m Preprocessor task size: 5540
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m Building the SAS task...
+[2m2026-09-13T22:19:39.955Z[0m [32m INFO[0m done
+[2m2026-09-13T22:19:39.956Z[0m [32m INFO[0m Parsed numeric SAS output in: 1.499527046s
+[2m2026-09-13T22:19:39.956Z[0m [32m INFO[0m === Search Engine ===
+[2m2026-09-13T22:19:39.956Z[0m [32m INFO[0m File: /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/experiments/first_approach/../../data/processed/pddl/domain.pddl + /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/experiments/first_approach/../../data/processed/pddl/P/P-n20-k2.pddl (in-memory)
+[2m2026-09-13T22:19:39.956Z[0m [32m INFO[0m Variables: 56 regular, 112 numeric
+[2m2026-09-13T22:19:39.956Z[0m [32m INFO[0m Starting GBFS search with HeuristicSpec { name: "llm_001", args: [] }...
+[2m2026-09-13T22:19:39.957Z[0m [32m INFO[0m State representation: bins=2
+[2m2026-09-13T22:19:39.957Z[0m [32m INFO[0m New best heuristic value for llm_001: 32
+[2m2026-09-13T22:19:39.957Z[0m [32m INFO[0m [g=0, 1 evaluated, 0 expanded, t=0.000004s, 597084 KB]
+[2m2026-09-13T22:19:39.957Z[0m [32m INFO[0m Initial heuristic value for llm_001: 32
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Search timed out
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Expanded 36023909 state(s).
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Reopened 0 state(s).
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Evaluated 104237772 state(s).
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Evaluations: 218643940
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Generated 431836379 state(s).
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Dead ends: 0 state(s).
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Expanded until last jump: 0 state(s).
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Reopened until last jump: 0 state(s).
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Evaluated until last jump: 0 state(s).
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Generated until last jump: 0 state(s).
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Number of registered states: 104237772
+[2m2026-09-13T22:24:57.869Z[0m [32m INFO[0m Search time: 300.000003s

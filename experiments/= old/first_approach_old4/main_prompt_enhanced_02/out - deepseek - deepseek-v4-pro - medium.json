@@ -1,0 +1,24 @@
+{
+  "what": "This heuristic precomputes CVRP-specific structures once: it scans propositional fact names to discover loc and visited facts, identifies customers and depot structurally, discovers numeric IDs for load and vehicles, extracts directed travel costs from grounded visit/visit-via-depot/return operators using metric_operator_cost_from_initial_values, and fills missing arcs from PNE numeric names and depot-based fallback. At evaluation it reads current location, visited set, load, and vehicles used; performs a resource infeasibility check; then runs a state-anchored greedy completion that chooses either direct visits while capacity permits or visit-via-depot transitions when a new vehicle is needed. A final return-to-depot cost is added. The returned value is h_routing + h_capacity, where h_capacity is a capacity-pressure estimate over extra depot-linked routes.",
+  "why": "The representative instances show fleet-limited capacitated VRP with a single depot, tens of customers, heterogeneous demands, and dense directed travel-cost matrices. Therefore the heuristic must distinguish direct visits from depot-reload transitions and use current load/vehicles; this is implemented in the greedy simulation and via/direct cost matrices. It is more informative than unvisited-count heuristics because it considers the current location, current load, remaining vehicles, actual metric arc costs, and fleet capacity. It is more informative than a pure sum of minimum depot distances because it approximates route continuation from the current position and explicitly charges via-depot transitions when capacity is insufficient. Operator-based cost extraction avoids fragile PNE-only parsing and respects directed costs without assuming symmetry.",
+  "instance_patterns": [
+    "Single depot and tens of customers with small fleet limits",
+    "Heterogeneous customer demands and capacities small enough that multiple routes/reloads are necessary",
+    "Dense explicit directed travel-cost matrix over customers and depot",
+    "Grounded visit, visit-via-depot, and return-to-depot operators preserve route semantics"
+  ],
+  "design": [
+    "Operator-based travel cost reconstruction from grounded actions",
+    "Precomputed directed distance matrices and sorted nearest-neighbor lists per customer",
+    "Resource/capacity lower-bound check using remaining demand, current load, remaining vehicles, and capacity",
+    "Dead-end detection for resource-infeasible states",
+    "State-anchored greedy completion with explicit direct visit vs visit-via-depot simulation"
+  ],
+  "complexity": "Precomputation is O(n^2 log n) due to sorting adjacency lists for n customers. Each compute_heuristic call is O(n^2) worst-case because the greedy simulation may scan unvisited customers, but in practice the pre-sorted nearest lists keep it near O(n*k) for small n (tens of customers).",
+  "fallbacks": "Travel costs are extracted primarily from grounded operators. Missing arcs are then filled from numeric variable names containing travel-cost(. Remaining customer-customer arcs are filled conservatively via depot as cust_to_depot[i]+depot_to_cust[j]. Construction fails only if directed depot/customer depot legs remain incomplete. If demand variables cannot be found, each customer demand falls back to 1.0, and capacity/max_vehicles fall back to a large value or n+1 respectively to avoid false dead-ends.",
+  "known_limitations": [
+    "The greedy completion is not admissible and may overestimate routing cost, so the heuristic is intended for greedy search rather than optimal guarantees.",
+    "Resource infeasibility detection depends on discovered demand/capacity values; if PNE compilation hides them, the fallback may underestimate or miss infeasible states.",
+    "The per-state simulation is worst-case O(n^2) and does not optimize route balance or future fleet utilization beyond the greedy next customer choice."
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "what": "The heuristic precomputes a directed routing model by discovering loc/visited facts semantically, identifying the depot structurally, resolving load and vehicles IDs, and extracting direct, via-depot, and return costs primarily from grounded operators. For each state it finds the current location and unvisited set, checks fleet-capacity feasibility when exact resource constants are available, chooses a capacity-feasible first transition from the current location, estimates directed continuation and final-return costs, and adds explicit capacity-reload and fleet-pressure components.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with heterogeneous demands, so load, remaining demand, used vehicles, residual capacity, and required depot reloads directly affect the estimate. Their dense explicit travel-cost matrices motivated operator-based directed cost reconstruction and cheap precomputed local connection summaries. The domain has materially different direct visit and visit-via-depot actions, so the first transition and reload component model those alternatives separately. Because the family has many customers but a small fleet, evaluation is linear rather than repeatedly sorting or constructing an MST. This is more informative than customer count because it uses actual directed travel and state resources; more informative than summed depot distances because it accounts for the current anchor and customer-to-customer links; and more informative than a purely geometric estimate because it detects fleet-capacity dead ends and charges for depot reloads.",
+  "instance_patterns": [
+    "Fleet-limited capacitated routing with multiple depot reloads on low-capacity instances",
+    "Dense explicit pairwise travel costs that are usually symmetric in examples but are treated as directed",
+    "Heterogeneous customer demands that make residual load and packing pressure important",
+    "Dozens of customers, favoring linear per-state evaluation with task-level precomputation",
+    "Single-depot goals requiring every customer to be visited and a final return to the depot"
+  ],
+  "design": [
+    "Geometric routing estimate over the current unvisited set",
+    "Capacity/resource bound using remaining demand, current load, capacity, and remaining fleet",
+    "Operator-based travel-cost reconstruction",
+    "Resource dead-end detection"
+  ],
+  "complexity": "O(n) per state, where n is the number of customers; static matrix construction and operator scanning occur only in new().",
+  "fallbacks": "Missing direct arcs are first recovered from exact travel-cost PNE names and initial values. Missing via-depot arcs are then synthesized only when both directed depot legs are known. Missing capacity, demand, or max-vehicles names use permissive defaults and disable or weaken resource terms without preventing routing evaluation. Construction fails clearly if a customer lacks a usable depot outgoing or return arc.",
+  "known_limitations": [
+    "The continuation estimate uses precomputed minimum directed outgoing links and therefore can select links through customers already visited or create disconnected subtours.",
+    "Aggregate demand determines the estimated reload count and does not solve the full heterogeneous bin-packing problem.",
+    "The fleet-pressure term is a deliberately non-admissible tie breaker and may overestimate or reorder states imperfectly."
+  ]
+}

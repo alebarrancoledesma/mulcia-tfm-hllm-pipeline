@@ -1,0 +1,25 @@
+{
+  "what": "The heuristic first scans semantic facts to discover loc/visited propositions, loc and visited variables, the depot, and all customers. It discovers numeric IDs for load and vehicles plus capacity, max_vehicles, and customer demands. Directed direct-visit costs, visit-via-depot costs, and return-to-depot costs are reconstructed primarily from grounded visit/visit-via-depot/return-to-depot operators using metric_operator_cost_from_initial_values. Travel-cost PNE names are used only as a fallback. Per state, it reads the current location, load, vehicles-used, and visited set, then runs a small state-dependent greedy capacitated completion from the current location. The greedy simulation chooses the cheapest feasible direct visit or, when at a customer and fleet remains, the cheapest feasible visit-via-depot move. It adds the final return-to-depot cost. It also adds explicit fleet-pressure and capacity-pressure components, and returns a large finite penalty for resource-infeasible or no-move states.",
+  "why": "The representative instances are fleet-limited capacitated vehicle routing instances with dense explicit travel-cost data, heterogeneous customer demands, small fleets, and tens of customers. A pure goal-count or minimum-depot-distance heuristic ignores capacity, current location, and fleet exhaustion. The chosen design reflects those patterns by precomputing directed operator costs and nearest-neighbor lists once, while making every evaluation depend on the current location, current load, used vehicles, and unvisited set. Direct visit and visit-via-depot are modeled separately, so the heuristic can distinguish extending the current route from spending a vehicle to reload at the depot. The added capacity and fleet components make states with tight remaining capacity or few remaining vehicles look worse, which helps greedy best-first search avoid dead-ends near resource limits.",
+  "instance_patterns": [
+    "Fleet-limited capacitated routing with a small number of vehicles relative to customers",
+    "Dense explicit travel-cost matrices, with both direct and via-depot costs available in operators",
+    "Heterogeneous customer demands on the order of capacity tens",
+    "Depot-centered actions: direct visit, visit-via-depot, and final return-to-depot",
+    "Tens of customers, making O(n^2) or small greedy evaluations acceptable if static data are precomputed"
+  ],
+  "design": [
+    "Operator-based travel-cost reconstruction",
+    "State-dependent capacitated greedy completion with precomputed nearest-neighbor lists",
+    "Resource dead-end detection with large finite penalty",
+    "Explicit capacity/fleet pressure components",
+    "Scratch buffers for repeated numeric and visited-state access"
+  ],
+  "complexity": "Construction is O(n^2) in the number of customers, dominated by matrix fill and neighbor sorting. Evaluation is O(n^2) worst-case because each greedy step may scan sorted neighbor lists; for these tens-of-customers instances this is cheap and does not sort or rebuild matrices at evaluation time.",
+  "fallbacks": "Travel costs are first extracted from grounded operators. If some direct or via-depot arcs are still missing, numeric PNE names containing travel-cost or travel-cost-via-depot are parsed and used. Missing via-depot costs are then filled as return-to-depot plus depot-to-customer if both legs are known. Missing customer-to-customer direct arcs are filled the same way. The constructor fails with a clear error if depot-to-customer or customer-to-depot costs remain unknown, rather than silently using arbitrary constants.",
+  "known_limitations": [
+    "The greedy completion is not a proven lower bound and may be over-optimistic or over-pessimistic depending on route structure; it is intended for informed search rather than optimality guarantees.",
+    "Demand extraction assumes zero-ary or simple PNE demand(customer) variables are present; if PlanForge compiles demand into deeply derived expressions, the demand model may be incomplete.",
+    "Evaluation is O(n^2) worst-case, which is acceptable for the observed tens-of-customers distribution but would need a more carefully filtered scan for much larger instances."
+  ]
+}

@@ -1,0 +1,14 @@
+   Compiling planforge-llm-cvrp v0.1.0 (/mnt/c/Code/GitHub/TFM/mulcia-tfm-PlanForge/experiments/llm-cvrp-runner)
+error[E0308]: mismatched types
+  --> experiments/llm-cvrp-runner/src/main.rs:99:66
+   |
+99 |                 customers_with_facts.push((customer.to_string(), fact));
+   |                                                                  ^^^^ expected `ExplicitFact`, found `&ExplicitFact`
+   |
+help: consider dereferencing the borrow
+   |
+99 |                 customers_with_facts.push((customer.to_string(), *fact));
+   |                                                                  +
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `planforge-llm-cvrp` (bin "planforge-llm-cvrp") due to 1 previous error

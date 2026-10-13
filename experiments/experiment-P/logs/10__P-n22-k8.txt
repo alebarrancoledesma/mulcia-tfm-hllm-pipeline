@@ -1,0 +1,156 @@
+[2m2026-09-13T23:38:07.142Z[0m [32m INFO[0m Generated 69 rules.
+[2m2026-09-13T23:38:07.320Z[0m [32m INFO[0m 428993 relevant atoms
+[2m2026-09-13T23:38:07.320Z[0m [32m INFO[0m 644176 auxiliary atoms
+[2m2026-09-13T23:38:07.320Z[0m [32m INFO[0m 1073169 final queue length
+[2m2026-09-13T23:38:07.320Z[0m [32m INFO[0m 1077576 total queue pushes
+[2m2026-09-13T23:38:07.334Z[0m [32m INFO[0m Grounding progress: 0 actions, 1073169 atoms, approximately 73.61 MiB held; collecting reachable facts.
+[2m2026-09-13T23:38:07.350Z[0m [32m INFO[0m Grounding progress: 903 actions, 1073169 atoms, approximately 75.01 MiB held; instantiating axioms.
+[2m2026-09-13T23:38:07.604Z[0m [32m INFO[0m Grounding complete: 903 actions, 1073169 atoms, approximately 75.01 MiB held (109.67 MiB peak).
+[2m2026-09-13T23:38:07.645Z[0m [32m INFO[0m Finding invariants...
+[2m2026-09-13T23:38:07.645Z[0m [32m INFO[0m 4 initial candidates
+[2m2026-09-13T23:38:07.645Z[0m [32m INFO[0m Found 0 invariants
+[2m2026-09-13T23:38:07.645Z[0m [32m INFO[0m Checking invariant weight...
+[2m2026-09-13T23:38:07.645Z[0m [32m INFO[0m Found 0 useful groups
+[2m2026-09-13T23:38:07.645Z[0m [32m INFO[0m Instantiating groups...
+[2m2026-09-13T23:38:07.646Z[0m [32m INFO[0m Collecting mutex groups...
+[2m2026-09-13T23:38:07.646Z[0m [32m INFO[0m Choosing groups...
+[2m2026-09-13T23:38:07.646Z[0m [32m INFO[0m 45 uncovered facts
+[2m2026-09-13T23:38:07.646Z[0m [32m INFO[0m Building translation key...
+[2m2026-09-13T23:38:09.178Z[0m [32m INFO[0m 882 effect conditions simplified
+[2m2026-09-13T23:38:09.178Z[0m [32m INFO[0m 0 implied preconditions added
+[2m2026-09-13T23:38:09.178Z[0m [32m INFO[0m Simplified global constraint to new variable ordering (22, 0)
+[2m2026-09-13T23:38:09.179Z[0m [32m INFO[0m 0 operators removed
+[2m2026-09-13T23:38:09.179Z[0m [32m INFO[0m 0 axioms removed
+[2m2026-09-13T23:38:09.179Z[0m [32m INFO[0m 0 propositions removed
+[2m2026-09-13T23:38:09.259Z[0m [32m INFO[0m Building causal graph...
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m The causal graph is not acyclic.
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m 62 variables of 62 necessary
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m 145 numeric variables of 216 necessary
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m 0 of 0 mutex groups necessary.
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m 903 of 903 operators necessary.
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m 22 of 22 axiom rules necessary.
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m 17 of 17 axiom functional comparison rules necessary.
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m 34 of 34 axiom functional assignment rules necessary.
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m Preprocessor facts: 124
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m Preprocessor derived variables: 19
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m Preprocessor task size: 6735
+[2m2026-09-13T23:38:09.260Z[0m [32m INFO[0m Building the SAS task...
+[2m2026-09-13T23:38:09.261Z[0m [32m INFO[0m done
+[2m2026-09-13T23:38:09.261Z[0m [32m INFO[0m Parsed numeric SAS output in: 2.13333874s
+[2m2026-09-13T23:38:09.261Z[0m [32m INFO[0m === Search Engine ===
+[2m2026-09-13T23:38:09.261Z[0m [32m INFO[0m File: /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/experiments/experiment001/../../data/processed/pddl/domain.pddl + /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/experiments/experiment001/../../data/processed/pddl/P/P-n22-k8.pddl (in-memory)
+[2m2026-09-13T23:38:09.261Z[0m [32m INFO[0m Variables: 62 regular, 145 numeric
+[2m2026-09-13T23:38:09.262Z[0m [32m INFO[0m Starting GBFS search with HeuristicSpec { name: "llm_001", args: [] }...
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m State representation: bins=2
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m New best heuristic value for llm_001: 319.400000
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m [g=0, 1 evaluated, 0 expanded, t=0.000008s, 444708 KB]
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m Initial heuristic value for llm_001: 319.400000
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m New best heuristic value for llm_001: 289.300000
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m [g=28, 2 evaluated, 1 expanded, t=0.000065s, 444708 KB]
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m New best heuristic value for llm_001: 285.800000
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m [g=10, 10 evaluated, 1 expanded, t=0.000096s, 444708 KB]
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m New best heuristic value for llm_001: 256.400000
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m [g=49, 13 evaluated, 1 expanded, t=0.000113s, 444708 KB]
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m New best heuristic value for llm_001: 247.400000
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m [g=146, 38 evaluated, 2 expanded, t=0.000184s, 444708 KB]
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m New best heuristic value for llm_001: 232.400000
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m [g=231, 77 evaluated, 3 expanded, t=0.000266s, 444708 KB]
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m New best heuristic value for llm_001: 227.400000
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m [g=242, 97 evaluated, 4 expanded, t=0.000307s, 444708 KB]
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m New best heuristic value for llm_001: 221.400000
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m [g=301, 140 evaluated, 5 expanded, t=0.000386s, 444708 KB]
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m New best heuristic value for llm_001: 205.400000
+[2m2026-09-13T23:38:09.263Z[0m [32m INFO[0m [g=317, 145 evaluated, 6 expanded, t=0.000402s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 199.900000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=365, 184 evaluated, 7 expanded, t=0.000470s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 198.500000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=376, 187 evaluated, 7 expanded, t=0.000481s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 192.900000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=375, 188 evaluated, 7 expanded, t=0.000489s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 189.900000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=458, 214 evaluated, 8 expanded, t=0.000534s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 183.100000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=523, 228 evaluated, 9 expanded, t=0.000560s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 179.600000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=510, 233 evaluated, 9 expanded, t=0.000573s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 171.900000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=531, 236 evaluated, 9 expanded, t=0.000583s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 159.900000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=596, 262 evaluated, 10 expanded, t=0.000621s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 159.200000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=646, 268 evaluated, 11 expanded, t=0.000638s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 152.200000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=623, 271 evaluated, 11 expanded, t=0.000647s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 145.900000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=610, 275 evaluated, 11 expanded, t=0.000658s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 139.600000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=660, 277 evaluated, 11 expanded, t=0.000667s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 133
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=713, 285 evaluated, 12 expanded, t=0.000686s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 131.600000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=668, 287 evaluated, 12 expanded, t=0.000695s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 115.600000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=684, 288 evaluated, 13 expanded, t=0.000704s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 108.400000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=713, 296 evaluated, 14 expanded, t=0.000720s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 104.500000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=728, 298 evaluated, 18 expanded, t=0.000732s, 444708 KB]
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m New best heuristic value for llm_001: 94.400000
+[2m2026-09-13T23:38:09.264Z[0m [32m INFO[0m [g=770, 563 evaluated, 373 expanded, t=0.001401s, 444708 KB]
+[2m2026-09-13T23:38:09.269Z[0m [32m INFO[0m New best heuristic value for llm_001: 94.000000
+[2m2026-09-13T23:38:09.269Z[0m [32m INFO[0m [g=696, 2654 evaluated, 3214 expanded, t=0.006025s, 444708 KB]
+[2m2026-09-13T23:38:09.269Z[0m [32m INFO[0m New best heuristic value for llm_001: 88.200000
+[2m2026-09-13T23:38:09.269Z[0m [32m INFO[0m [g=648, 2677 evaluated, 3242 expanded, t=0.006077s, 444708 KB]
+[2m2026-09-13T23:38:09.269Z[0m [32m INFO[0m New best heuristic value for llm_001: 86.200000
+[2m2026-09-13T23:38:09.269Z[0m [32m INFO[0m [g=659, 2697 evaluated, 3269 expanded, t=0.006130s, 444708 KB]
+[2m2026-09-13T23:38:09.269Z[0m [32m INFO[0m New best heuristic value for llm_001: 84.500000
+[2m2026-09-13T23:38:09.269Z[0m [32m INFO[0m [g=640, 2700 evaluated, 3278 expanded, t=0.006147s, 444708 KB]
+[2m2026-09-13T23:38:09.286Z[0m [32m INFO[0m New best heuristic value for llm_001: 77.600000
+[2m2026-09-13T23:38:09.286Z[0m [32m INFO[0m [g=711, 8877 evaluated, 13673 expanded, t=0.022962s, 444708 KB]
+[2m2026-09-13T23:38:09.289Z[0m [32m INFO[0m New best heuristic value for llm_001: 77.400000
+[2m2026-09-13T23:38:09.289Z[0m [32m INFO[0m [g=787, 10201 evaluated, 15421 expanded, t=0.025817s, 444708 KB]
+[2m2026-09-13T23:38:09.291Z[0m [32m INFO[0m New best heuristic value for llm_001: 76.200000
+[2m2026-09-13T23:38:09.291Z[0m [32m INFO[0m [g=831, 10997 evaluated, 16668 expanded, t=0.028013s, 444708 KB]
+[2m2026-09-13T23:38:09.306Z[0m [32m INFO[0m New best heuristic value for llm_001: 72.600000
+[2m2026-09-13T23:38:09.306Z[0m [32m INFO[0m [g=703, 13510 evaluated, 26586 expanded, t=0.042902s, 444708 KB]
+[2m2026-09-13T23:38:09.309Z[0m [32m INFO[0m New best heuristic value for llm_001: 71.500000
+[2m2026-09-13T23:38:09.309Z[0m [32m INFO[0m [g=681, 14145 evaluated, 28313 expanded, t=0.045531s, 444708 KB]
+[2m2026-09-13T23:38:09.309Z[0m [32m INFO[0m New best heuristic value for llm_001: 67.300000
+[2m2026-09-13T23:38:09.309Z[0m [32m INFO[0m [g=633, 14298 evaluated, 28731 expanded, t=0.046190s, 444708 KB]
+[2m2026-09-13T23:38:09.574Z[0m [32m INFO[0m New best heuristic value for llm_001: 64.200000
+[2m2026-09-13T23:38:09.575Z[0m [32m INFO[0m [g=786, 84941 evaluated, 187933 expanded, t=0.311436s, 444708 KB]
+[2m2026-09-13T23:38:09.998Z[0m [32m INFO[0m New best heuristic value for llm_001: 64
+[2m2026-09-13T23:38:09.998Z[0m [32m INFO[0m [g=655, 165897 evaluated, 427244 expanded, t=0.735160s, 444708 KB]
+[2m2026-09-13T23:38:10.015Z[0m [32m INFO[0m New best heuristic value for llm_001: 62
+[2m2026-09-13T23:38:10.015Z[0m [32m INFO[0m [g=708, 169172 evaluated, 438051 expanded, t=0.752188s, 444708 KB]
+[2m2026-09-13T23:38:10.064Z[0m [32m INFO[0m New best heuristic value for llm_001: 60.800000
+[2m2026-09-13T23:38:10.064Z[0m [32m INFO[0m [g=826, 176834 evaluated, 468209 expanded, t=0.801105s, 444708 KB]
+[2m2026-09-13T23:38:10.076Z[0m [32m INFO[0m New best heuristic value for llm_001: 60.200000
+[2m2026-09-13T23:38:10.076Z[0m [32m INFO[0m [g=630, 178122 evaluated, 475383 expanded, t=0.813306s, 444708 KB]
+[2m2026-09-13T23:38:10.078Z[0m [32m INFO[0m New best heuristic value for llm_001: 54.800000
+[2m2026-09-13T23:38:10.078Z[0m [32m INFO[0m [g=648, 178411 evaluated, 476265 expanded, t=0.814771s, 444708 KB]
+[2m2026-09-13T23:38:10.078Z[0m [32m INFO[0m New best heuristic value for llm_001: 52.800000
+[2m2026-09-13T23:38:10.078Z[0m [32m INFO[0m [g=648, 178420 evaluated, 476278 expanded, t=0.814810s, 444708 KB]
+[2m2026-09-13T23:38:10.584Z[0m [32m INFO[0m New best heuristic value for llm_001: 47
+[2m2026-09-13T23:38:10.584Z[0m [32m INFO[0m [g=798, 214936 evaluated, 778824 expanded, t=1.320949s, 58248 KB]
+[2m2026-09-13T23:38:11.701Z[0m [32m INFO[0m New best heuristic value for llm_001: 45
+[2m2026-09-13T23:38:11.701Z[0m [32m INFO[0m [g=703, 329489 evaluated, 1365075 expanded, t=2.438289s, 71388 KB]
+[2m2026-09-13T23:38:11.701Z[0m [32m INFO[0m New best heuristic value for llm_001: 43
+[2m2026-09-13T23:38:11.701Z[0m [32m INFO[0m [g=703, 329517 evaluated, 1365117 expanded, t=2.438391s, 71388 KB]
+[2m2026-09-13T23:38:11.726Z[0m [32m INFO[0m New best heuristic value for llm_001: 42.700000
+[2m2026-09-13T23:38:11.726Z[0m [32m INFO[0m [g=770, 334577 evaluated, 1378589 expanded, t=2.463180s, 71508 KB]
+[2m2026-09-13T23:38:11.950Z[0m [32m INFO[0m New best heuristic value for llm_001: 41.200000
+[2m2026-09-13T23:38:11.951Z[0m [32m INFO[0m [g=833, 391795 evaluated, 1489693 expanded, t=2.687438s, 72212 KB]
+[2m2026-09-13T23:38:11.952Z[0m [32m INFO[0m New best heuristic value for llm_001: 38.500000
+[2m2026-09-13T23:38:11.952Z[0m [32m INFO[0m [g=863, 392075 evaluated, 1490296 expanded, t=2.688652s, 72212 KB]
+[2m2026-09-13T23:38:11.984Z[0m [32m INFO[0m New best heuristic value for llm_001: 32.300000
+[2m2026-09-13T23:38:11.984Z[0m [32m INFO[0m [g=849, 398857 evaluated, 1505803 expanded, t=2.720828s, 72240 KB]
+[2m2026-09-13T23:38:11.984Z[0m [32m INFO[0m New best heuristic value for llm_001: 31.400000
+[2m2026-09-13T23:38:11.984Z[0m [32m INFO[0m [g=856, 398881 evaluated, 1505833 expanded, t=2.720918s, 72240 KB]
+[2m2026-09-13T23:43:19.194Z[0m [32m INFO[0m New best heuristic value for llm_001: 26.500000
+[2m2026-09-13T23:43:19.194Z[0m [32m INFO[0m [g=837, 13166584 evaluated, 98447116 expanded, t=292.308091s, 918652 KB]
+[2m2026-09-13T23:43:19.194Z[0m [32m INFO[0m New best heuristic value for llm_001: 14.100000
+[2m2026-09-13T23:43:19.194Z[0m [32m INFO[0m [g=850, 13166586 evaluated, 98447117 expanded, t=292.308142s, 918652 KB]
+Peak memory: 2107984 KB
+caught signal 24 -- exiting
+[2m2026-09-13T23:43:24.809Z[0m [32m INFO[0m Time limit reached. Abort search.

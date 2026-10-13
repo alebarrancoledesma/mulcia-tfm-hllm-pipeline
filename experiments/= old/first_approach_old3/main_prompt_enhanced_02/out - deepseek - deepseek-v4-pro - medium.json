@@ -1,0 +1,25 @@
+{
+  "what": "The heuristic builds a task-specific CVRP evaluator. In new(), it scans propositional facts for loc and visited, discovers depot and customer indices, finds numeric IDs for load/vehicles/max_vehicles/capacity, and extracts travel costs primarily from grounded visit, visit-via-depot, and return-to-depot operators via metric_operator_cost_from_initial_values. It falls back to travel-cost and demand numeric names when available, fills missing arcs through depot legs, and precomputes nearest-neighbor adjacency lists and demand arrays. At evaluation time it reads the current location, load, vehicles used, and unvisited set. It returns 0 for goals. If all customers are visited but the vehicle is away from the depot it returns the final return cost. Otherwise it performs a state-anchored capacitated greedy completion: from the current place it repeatedly chooses the nearest feasible unvisited direct visit if load permits, otherwise it uses a visit-via-depot transition if vehicles remain. The completion includes the final return-to-depot. It also checks resource infeasibility and adds a small vehicle-pressure term. The returned value is h_routing + h_capacity_penalty + h_vehicle_pressure.",
+  "why": "The representative instances are fleet-limited CVRPs with about 30-40 customers, 5 vehicles, capacity 100, heterogeneous demands, and dense explicit travel-cost matrices. This design reflects those patterns directly: small fleet and heterogeneous demands motivate explicit load/capacity and remaining-vehicle checks plus direct-visit vs visit-via-depot transitions; dense metric travel costs motivate operator-based extraction and precomputed nearest-neighbor lists. The heuristic is more informative than unvisited-count or sum of depot distances because it depends on current location, current load, vehicles used, the actual unvisited set, and actual directed arc costs. It is also more informative than a purely geometric estimate because it models capacity and vehicle limits and assigns finite penalties to resource-infeasible states.",
+  "instance_patterns": [
+    "fleet-limited capacitated routing with a small number of vehicles relative to customers",
+    "heterogeneous customer demands",
+    "dense explicit metric travel-cost matrix",
+    "depot-centered routes with direct visits and depot-reload transitions",
+    "moderate number of customers, making O(n^2) precomputation cheap"
+  ],
+  "design": [
+    "operator-based travel cost reconstruction from grounded visit, visit-via-depot, and return-to-depot actions",
+    "precomputed nearest-neighbor adjacency lists for fast greedy completion",
+    "capacitated greedy completion that distinguishes direct visits from visit-via-depot transitions",
+    "resource dead-end detection using remaining demand, residual capacity, and remaining vehicles",
+    "reusable scratch buffers for numeric values, propositional values, unvisited customers, and mutation flags"
+  ],
+  "complexity": "O(k^2) worst-case per compute_heuristic call, where k is the number of unvisited customers. The precomputed nearest-neighbor lists usually make greedy scanning short, and all distance lookups are O(1). No global sorting or full distance-matrix rebuild occurs during evaluation.",
+  "fallbacks": "If grounded operator costs are missing for some arcs, the constructor attempts to fill them from numeric variable names containing travel-cost(. If direct arcs are still missing, it fills directed a->b arcs using a->depot plus depot->b when both depot legs are known. If after all fallbacks no usable depot-connected travel costs exist, construction fails with a clear HeuristicBuildError. If demand or capacity data is unavailable, demands default to 0.0 and capacity to f64::MAX, which disables some capacity pressures but still allows routing estimates to run.",
+  "known_limitations": [
+    "The greedy completion is local and may under- or overestimate optimal cost because it commits to nearest feasible customers without lookahead.",
+    "If demand values are absent from numeric names, capacity/resource infeasibility checks become weaker.",
+    "The fallback that fills missing directed arcs through the depot may overestimate direct route costs when direct arc existence is ambiguous."
+  ]
+}

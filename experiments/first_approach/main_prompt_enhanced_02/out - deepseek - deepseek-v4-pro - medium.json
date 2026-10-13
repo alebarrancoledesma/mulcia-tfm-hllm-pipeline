@@ -1,0 +1,25 @@
+{
+  "what": "The heuristic precomputes semantic loc/visited facts, customer and depot indices, exact load/vehicles numeric IDs, capacity/demand/max_vehicles best-effort values, and full routing-cost structures. It extracts travel costs primarily from grounded visit, visit-via-depot, and return-to-depot operators, with numeric travel-cost fallback and depot-based conservative completion. At evaluation time it reads the current location, load, vehicles used, and unvisited customers; checks resource infeasibility; then runs a state-anchored greedy completion that chooses the cheapest feasible direct visit or visit-via-depot transition using precomputed nearest-neighbor lists, adds final return-to-depot cost, and adds a capacity pressure term based on remaining demand beyond current residual capacity.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with heterogeneous customer demands and dense explicit travel-cost matrices. A heuristic based only on unvisited-customer count or sum of minimum depot distances would ignore both capacity and fleet pressure. Grounded-operator cost extraction is safer than PNE substring parsing and still captures the domain's metric objective. Modeling direct visit versus visit-via-depot transitions is important because tight capacities in the sample instances force depot reloads, especially in small-fleet instances. The state-anchored greedy completion avoids a fixed global route order and adapts to the current location, current load, used vehicles, and remaining unvisited set, making different search states much better distinguished.",
+  "instance_patterns": [
+    "Fleet-limited capacitated VRP with small vehicle counts and a single depot.",
+    "Dense explicit travel-cost matrix; often symmetric in examples but code avoids assuming symmetry.",
+    "Heterogeneous customer demands with capacity tight enough to force depot reloads.",
+    "Tens of customers, so precomputed matrices and per-state O(n^2)-with-small-n greedy completion are practical.",
+    "Actions explicitly distinguish direct visit and visit-via-depot transitions."
+  ],
+  "design": [
+    "Operator-based travel-cost reconstruction from grounded visit, visit-via-depot, and return-to-depot actions.",
+    "Capacity/fleet resource infeasibility detection with large finite dead-end penalties.",
+    "Precomputed nearest-neighbor lists for fast greedy-completion candidate selection.",
+    "State-anchored capacitated greedy completion that distinguishes direct visits from depot-reload transitions.",
+    "Exact semantic fact discovery for loc/visited and exact numeric lookup for load/vehicles."
+  ],
+  "complexity": "O(r * k) per state, where r is the number of unvisited customers and k is the length of scanned precomputed neighbor lists. In the worst case this is O(n^2) for n customers, but no per-state sorting, matrix rebuild, or task rescan is performed.",
+  "fallbacks": "If grounded operator costs are missing for some arcs, exact PNE travel-cost names are parsed. Still-missing customer-customer arcs are then filled conservatively via the depot if both depot legs are known. Missing capacity, demand, or max_vehicles values degrade permissively to f64::MAX / 0.0 instead of failing construction.",
+  "known_limitations": [
+    "The greedy completion is not admissible and can be misled by locally cheap direct visits that create poor later reloads.",
+    "If demand values are absent from the translated numeric state, capacity reasoning degrades and the resource component becomes weak.",
+    "The estimate uses depot-based completion for missing arcs, which may overestimate on instances where such arcs are asymmetric or non-metric."
+  ]
+}

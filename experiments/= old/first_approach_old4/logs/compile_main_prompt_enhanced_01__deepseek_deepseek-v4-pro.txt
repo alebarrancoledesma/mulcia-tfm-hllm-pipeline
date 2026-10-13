@@ -1,0 +1,26 @@
+   Compiling planforge-llm-cvrp v0.1.0 (/mnt/c/Code/GitHub/TFM/mulcia-tfm-PlanForge/experiments/llm-cvrp-runner)
+error[E0277]: `&&Vec<Operator>` is not an iterator
+   --> experiments/llm-cvrp-runner/src/main.rs:195:19
+    |
+195 |         for op in &operators {
+    |                   ^^^^^^^^^^ `&&Vec<Operator>` is not an iterator
+    |
+    = help: the trait `Iterator` is not implemented for `&&Vec<Operator>`
+    = note: required for `&&Vec<Operator>` to implement `IntoIterator`
+help: consider removing the leading `&`-reference
+    |
+195 -         for op in &operators {
+195 +         for op in operators {
+    |
+
+warning: unused variable: `task`
+   --> experiments/llm-cvrp-runner/src/main.rs:419:13
+    |
+419 |         let task = eval_state.task();
+    |             ^^^^ help: if this is intentional, prefix it with an underscore: `_task`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+For more information about this error, try `rustc --explain E0277`.
+warning: `planforge-llm-cvrp` (bin "planforge-llm-cvrp") generated 1 warning
+error: could not compile `planforge-llm-cvrp` (bin "planforge-llm-cvrp") due to 1 previous error; 1 warning emitted

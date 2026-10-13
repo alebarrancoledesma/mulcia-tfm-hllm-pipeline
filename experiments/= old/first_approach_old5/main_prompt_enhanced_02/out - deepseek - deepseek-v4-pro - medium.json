@@ -1,0 +1,23 @@
+{
+  "what": "The heuristic scans propositional facts in new() to discover loc and visited facts, scans grounded operator names to build direct, via-depot, and return cost matrices, and precomputes sorted nearest-neighbor lists. Numeric IDs for load and vehicles are resolved once; capacity, max_vehicles, and customer demands are read best-effort with permissive defaults. For each non-goal state, compute_heuristic reads current location, current load, vehicles used, and unvisited customers, then simulates a state-dependent greedy capacitated completion from the current state. The completion chooses direct visits when the current load permits, otherwise uses visit-via-depot transitions when vehicles remain. A resource infeasibility penalty is added when remaining demand cannot fit residual plus remaining fleet capacity. The final return-to-depot cost is included whenever the simulated route ends at a customer.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with heterogeneous demands, dense explicit metric travel costs, and a single depot. A heuristic that only counts unvisited customers or sums depot distances ignores load, fleet pressure, and the distinction between direct visits and depot reloads. This design reconstructs actual travel costs from grounded operators, which captures the explicit metric matrix, and re-anchors a greedy route completion from the current state rather than reusing one fixed customer order. The resource penalty directly models capacity and max_vehicles limitations, and using both direct and via-depot costs reflects the domain's two main routing actions.",
+  "instance_patterns": [
+    "Fleet-limited capacitated routing with max_vehicles small relative to customers.",
+    "Heterogeneous customer demands with capacity tight enough to force depot reloads.",
+    "Dense explicit travel-cost matrix, mostly symmetric in examples but not assumed.",
+    "Single depot, tens of customers, direct visit and visit-via-depot transitions dominate."
+  ],
+  "design": [
+    "Operator-based travel cost reconstruction from grounded visit, visit-via-depot, and return-to-depot actions.",
+    "Capacity/resource lower bound and dead-end penalty using remaining demand, current load, capacity, and remaining vehicles.",
+    "Precomputed sorted nearest-neighbor lists for fast candidate order during state evaluation.",
+    "State-dependent greedy capacitated routing completion anchored at current location, load, and vehicles used."
+  ],
+  "complexity": "new() is O(P^2 log P) for matrix and nearest-list precomputation. compute_heuristic() is O(n^2) worst-case due greedy completion over at most n unvisited customers, with n in the tens and no task rescanning or full matrix rebuild.",
+  "fallbacks": "The primary distance extraction is Phase A grounded operators. If some travel-cost arcs remain missing, Phase B exact PNE names matching travel-cost(...) fill direct arcs. Phase C effective-cost logic also reconstructs customer-to-customer connections through depot legs. If depot-to-customer or customer connectivity remains unusable, new() fails with a HeuristicBuildError. Missing capacity/demand/max_vehicles PNEs degrade permissively instead of aborting construction.",
+  "known_limitations": [
+    "The greedy completion is not admissible and may overestimate or underestimate true optimal routing cost.",
+    "Resource penalties do not solve the underlying bin-packing; they only detect coarse capacity/fleet infeasibility.",
+    "If capacity or demand PNEs are absent in a translated task, the resource component weakens to zero or permissive behavior."
+  ]
+}

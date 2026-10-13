@@ -1,0 +1,56 @@
+compilando planforge...
+>>> blind  gbfs(blind())  P-n16-k8
+    solved=yes  t=13.802445  exp=5224907  cost=468.000000
+>>> blind  gbfs(blind())  P-n20-k2
+    solved=no  t=300.000010  exp=41007840  cost=
+>>> blind  gbfs(blind())  P-n23-k8
+    solved=no  t=300.000071  exp=26623782  cost=
+>>> ff  gbfs(ff())  P-n16-k8
+    solved=yes  t=0.418045  exp=81232  cost=540.000000
+>>> ff  gbfs(ff())  P-n20-k2
+    solved=yes  t=6.632133  exp=1407582  cost=529.000000
+>>> ff  gbfs(ff())  P-n23-k8
+    solved=no  t=  exp=  cost=
+>>> lmcutnumeric  gbfs(lmcutnumeric())  P-n16-k8
+    solved=no  t=  exp=  cost=
+>>> lmcutnumeric  gbfs(lmcutnumeric())  P-n20-k2
+    solved=no  t=  exp=  cost=
+>>> lmcutnumeric  gbfs(lmcutnumeric())  P-n23-k8
+    solved=no  t=  exp=  cost=
+copiando main_prompt__deepseek_deepseek-v4-pro -> runner
+main_prompt__deepseek_deepseek-v4-pro no compila
+copiando main_prompt__openai_gpt-5.6-sol -> runner
+>>> main_prompt__openai_gpt-5.6-sol  gbfs(llm_001())  P-n16-k8
+    solved=yes  t=1.763787  exp=1050204  cost=511.000000
+>>> main_prompt__openai_gpt-5.6-sol  gbfs(llm_001())  P-n20-k2
+    solved=yes  t=8.676207  exp=3341884  cost=296.000000
+>>> main_prompt__openai_gpt-5.6-sol  gbfs(llm_001())  P-n23-k8
+    solved=no  t=  exp=  cost=
+copiando main_prompt_enhanced_00__deepseek_deepseek-v4-pro -> runner
+main_prompt_enhanced_00__deepseek_deepseek-v4-pro no compila
+copiando main_prompt_enhanced_00__openai_gpt-5.6-sol -> runner
+>>> main_prompt_enhanced_00__openai_gpt-5.6-sol  gbfs(llm_001())  P-n16-k8
+    solved=yes  t=1.303732  exp=893575  cost=537.000000
+>>> main_prompt_enhanced_00__openai_gpt-5.6-sol  gbfs(llm_001())  P-n20-k2
+    solved=yes  t=5.917531  exp=2958234  cost=326.000000
+>>> main_prompt_enhanced_00__openai_gpt-5.6-sol  gbfs(llm_001())  P-n23-k8
+    solved=no  t=  exp=  cost=
+copiando main_prompt_enhanced_01__deepseek_deepseek-v4-pro -> runner
+main_prompt_enhanced_01__deepseek_deepseek-v4-pro no compila
+copiando main_prompt_enhanced_01__openai_gpt-5.6-sol -> runner
+>>> main_prompt_enhanced_01__openai_gpt-5.6-sol  gbfs(llm_001())  P-n16-k8
+    solved=no  t=  exp=  cost=
+>>> main_prompt_enhanced_01__openai_gpt-5.6-sol  gbfs(llm_001())  P-n20-k2
+    solved=no  t=  exp=  cost=
+>>> main_prompt_enhanced_01__openai_gpt-5.6-sol  gbfs(llm_001())  P-n23-k8
+    solved=no  t=  exp=  cost=
+copiando main_prompt_enhanced_02__deepseek_deepseek-v4-pro -> runner
+main_prompt_enhanced_02__deepseek_deepseek-v4-pro no compila
+copiando main_prompt_enhanced_02__openai_gpt-5.6-sol -> runner
+>>> main_prompt_enhanced_02__openai_gpt-5.6-sol  gbfs(llm_001())  P-n16-k8
+    solved=no  t=  exp=  cost=
+>>> main_prompt_enhanced_02__openai_gpt-5.6-sol  gbfs(llm_001())  P-n20-k2
+    solved=no  t=  exp=  cost=
+>>> main_prompt_enhanced_02__openai_gpt-5.6-sol  gbfs(llm_001())  P-n23-k8
+    solved=no  t=  exp=  cost=
+listo: /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/experiments/first_approach/metrics.csv

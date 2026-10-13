@@ -1,0 +1,26 @@
+{
+  "what": "The heuristic precomputes semantic location and visited facts, identifies the unique depot structurally, resolves load and vehicles numeric IDs, recovers demands and fleet constants, and reconstructs directed routing costs primarily from grounded visit, visit-via-depot, and return-to-depot operators. It also builds directed nearest-neighbor lists and a geographic customer cycle once. For each state it identifies the current location and unvisited set, checks aggregate fleet-capacity feasibility, re-anchors the cycle at the nearest currently unvisited customer, simulates a capacitated completion using direct visits or explicit via-depot transitions, adds the final depot return, and adds a separate reload/fleet-pressure component.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with tens of customers, a small fleet, heterogeneous demands, and dense explicit metric costs. That motivated a linear-time state evaluation using precomputed adjacency rather than per-state sorting or quadratic optimization. Heterogeneous demands and tight aggregate capacity motivated explicit use of remaining demand, residual load, vehicles used, capacity, and max vehicles, including a finite dead-end penalty. The domain has materially different direct visit and visit-via-depot actions, so the routing completion uses separately extracted operator costs for those transitions. Directed costs are retained because symmetry is common in the examples but is not guaranteed. This is more informative than customer count because it evaluates actual remaining travel and resources; more informative than summed depot distances because it captures customer-to-customer arcs and the current location; and more appropriate than a purely geometric estimate because it models route reloads, residual capacity, and fleet exhaustion.",
+  "instance_patterns": [
+    "Single-depot goal requiring all customers visited and a final return to the depot",
+    "Tens of customers, making cheap O(n) state evaluation preferable",
+    "Small fleet with capacity pressure and repeated visit-via-depot transitions",
+    "Heterogeneous customer demands that materially affect route boundaries",
+    "Dense explicit pairwise travel costs that are often symmetric but must be treated as directed",
+    "Direct customer visits dominate within a route, while depot reloads are necessary between routes"
+  ],
+  "design": [
+    "Geometric routing estimate using precomputed directed nearest-neighbor structure and a state-reanchored capacitated completion",
+    "Capacity/resource bound using remaining demand, current load, capacity, vehicles used, and fleet limit",
+    "Operator-based travel-cost reconstruction from grounded routing actions",
+    "Dead-end detection for aggregate resource infeasibility and absence of a legal next service action",
+    "Precomputed sorted adjacency lists with reusable evaluation scratch buffers"
+  ],
+  "complexity": "O(n) per state after task construction, where n is the number of customers. Construction uses O(n^2 log n) time for all sorted adjacency lists and O(n^2) memory for directed cost matrices.",
+  "fallbacks": "Grounded operators are the primary routing-cost source. Missing direct arcs are next recovered from surviving travel-cost numeric names. Still-missing customer-to-customer and via-depot arcs are conservatively composed from directed customer-to-depot and depot-to-customer legs. Construction fails with a clear HeuristicBuildError if the routing matrix remains unusable or essential resource data cannot be recovered; it never assumes symmetry or fills arcs with arbitrary distances.",
+  "known_limitations": [
+    "The state-reanchored geographic cycle is only a greedy completion and can pack demands poorly compared with a dedicated CVRP solver.",
+    "Demand, capacity, and max-vehicle recovery still depends on semantic numeric names surviving sufficiently in the compiled task; the documented API does not expose numeric expression internals for a stronger fallback.",
+    "A large penalty caused by the simulated ordering exhausting the fleet may also penalize a state that is feasible under a different customer packing order."
+  ]
+}

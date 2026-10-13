@@ -1,0 +1,25 @@
+{
+  "what": "The heuristic precomputes semantic loc/visited facts, directed visit costs, exact visit-via-depot costs, depot-return costs, customer demands, capacity, fleet size, minimum outgoing routing costs, and a characteristic travel-cost scale. At evaluation it reads the current location, visited set, load, and vehicles used. It returns a sum of three components: a current-state-anchored directed routing estimate, a capacity-induced depot-reload estimate, and a fleet-pressure term. It also detects states whose remaining demand exceeds residual current capacity plus remaining fleet capacity and returns a large finite penalty.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with heterogeneous demands, so remaining demand, residual load, and vehicles already used explicitly determine route breaks and dead ends. Their dense explicit metric-cost matrices motivate reconstructing directed costs once from grounded visit, visit-via-depot, and return operators rather than repeatedly parsing numeric fluents. The examples range from relatively few large-capacity routes to many small-capacity routes, motivating explicit distinction between a direct visit that fits and a depot reload that consumes a vehicle. The linear state scan is appropriate for instances with tens of customers. Compared with unvisited count, this estimate distinguishes expensive and cheap remaining regions; compared with a sum of depot distances, it uses customer-to-customer arcs and the current location; compared with a purely geometric estimate, it accounts for load, heterogeneous demand, required reloads, and fleet scarcity.",
+  "instance_patterns": [
+    "Single-depot routing with a mandatory final return to the depot",
+    "Fleet-limited capacitated routing where depot reload transitions are frequent in low-capacity instances",
+    "Heterogeneous customer demands that consume materially different fractions of vehicle capacity",
+    "Dense explicit pairwise travel costs that are often symmetric but are handled as directed",
+    "Instances with tens of customers, making one-pass state evaluation preferable"
+  ],
+  "design": [
+    "Geometric routing estimate using directed current-entry, minimum-outgoing, and final-return costs",
+    "Capacity/resource bound using remaining demand, current load, capacity, and remaining vehicles",
+    "Operator-based travel-cost reconstruction from grounded routing actions",
+    "Dead-end detection for fleet-capacity infeasibility",
+    "Task-level precomputation with reusable numeric and unvisited scratch buffers"
+  ],
+  "complexity": "O(n) time per state and O(n) reusable scratch space per heuristic object, where n is the number of customers.",
+  "fallbacks": "Grounded operators are the primary source of direct, via-depot, and return costs. Missing direct arcs are optionally recovered from travel-cost PNE names. Remaining missing customer-to-customer arcs are filled only when both directed depot legs are available; exact visit-via-depot costs are likewise reconstructed from those two legs when absent. Construction fails with a clear error if a customer lacks a usable depot departure/return, if essential resource data cannot be recovered, or if the resulting routing matrix is unusable.",
+  "known_limitations": [
+    "The sum of static minimum outgoing arcs is not a full spanning-tree or tour computation and may double-count or underrepresent connectivity.",
+    "The capacity component estimates the number of future routes from aggregate demand and does not solve the heterogeneous-demand bin-packing problem.",
+    "Construction requires recognizable demand, capacity, and max-vehicles numeric names; fully anonymous derived encodings without recoverable semantic names are rejected."
+  ]
+}

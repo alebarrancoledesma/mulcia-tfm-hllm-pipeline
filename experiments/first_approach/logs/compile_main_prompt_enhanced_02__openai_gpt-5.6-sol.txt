@@ -1,0 +1,15 @@
+   Compiling planforge-llm-cvrp v0.1.0 (/mnt/c/Code/GitHub/TFM/mulcia-tfm-PlanForge/experiments/llm-cvrp-runner)
+error[E0599]: no method named `variable` found for reference `&ExplicitFact` in the current scope
+   --> experiments/llm-cvrp-runner/src/main.rs:427:42
+    |
+427 |             if propositional_values[fact.variable()] == fact.value() {
+    |                                          ^^^^^^^^ method not found in `&ExplicitFact`
+
+error[E0599]: no method named `variable` found for reference `&ExplicitFact` in the current scope
+   --> experiments/llm-cvrp-runner/src/main.rs:451:56
+    |
+451 |             let is_visited = propositional_values[fact.variable()] == fact.value();
+    |                                                        ^^^^^^^^ method not found in `&ExplicitFact`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `planforge-llm-cvrp` (bin "planforge-llm-cvrp") due to 2 previous errors

@@ -1,0 +1,9 @@
+{
+  "family": "P",
+  "split": "test",
+  "description": "TEST P congelado. n<=23, disjunto de prompt/dev.",
+  "instances": [
+    "P-n21-k2",
+    "P-n22-k2"
+  ]
+}

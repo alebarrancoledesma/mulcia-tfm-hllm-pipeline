@@ -1,0 +1,18 @@
+{
+  "what": "The heuristic precomputes semantic loc/visited fact mappings, numeric resource IDs and values, customer demands, directed direct-visit costs, via-depot costs, return costs, and per-customer directed nearest-link costs. Grounded visit, visit-via-depot, and return-to-depot operators are the primary cost source. At evaluation it reads the current location, visited set, load, and vehicles; checks fleet-capacity feasibility; then returns h_routing + h_capacity. h_routing combines the cheapest legal first direct or via-depot transition, a directed nearest-link completion estimate, and a final return-to-depot leg. h_capacity charges estimated depot restart legs for capacity-forced additional routes.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with tens of heterogeneous-demand customers, a small vehicle limit, and an explicit pairwise metric cost matrix. Their action model makes direct visits materially different from depot reloads, so the heuristic explicitly tests load feasibility and prices visit-via-depot transitions. It is more informative than unvisited count because it uses directed travel costs and location; more informative than summing depot distances because it models customer-to-customer routing and the current route; and more useful than a purely geometric estimate because remaining demand, residual load, vehicles used, and max vehicles can detect dead ends and predict forced depot restarts.",
+  "design": [
+    "Geometric routing estimate using precomputed directed nearest-link costs",
+    "Capacity/resource bound using remaining demand, current load, capacity, vehicles, and fleet limit",
+    "Operator-based travel-cost reconstruction from grounded routing actions",
+    "Dead-end detection for fleet-capacity infeasibility",
+    "Reusable numeric, propositional, and unvisited scratch buffers"
+  ],
+  "complexity": "O(n) per state, with O(n^2) directed routing tables and O(n^2) one-time construction work.",
+  "fallbacks": "Missing travel arcs are first recovered from top-level travel-cost PNEs. Still-missing via-depot arcs are composed from separately known directed customer-to-depot and depot-to-customer legs; missing direct customer arcs may conservatively use that legal depot-separated cost. Construction fails with a clear HeuristicBuildError if depot legs, resource metadata, demands, or enough routing costs cannot be reconstructed. Evaluation returns a large finite instance-scaled penalty for malformed or resource-infeasible states.",
+  "known_limitations": [
+    "The nearest-link routing term is a relaxation and may connect to customers that are already visited, so it can underestimate or distort the best remaining tour.",
+    "The capacity component uses aggregate demand and does not solve a bin-packing relaxation, so heterogeneous demands can require more routes than it predicts.",
+    "Static capacity, fleet-limit, and demand values must remain discoverable as top-level PNEs; opaque derived-only resource names cannot be decoded through the documented API."
+  ]
+}

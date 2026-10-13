@@ -1,0 +1,26 @@
+{
+  "what": "The heuristic precomputes semantic loc/visited fact mappings, numeric resource IDs, customer demands, directed direct-visit costs, directed via-depot costs, depot return costs, and a directed greedy base tour. Travel costs are extracted primarily from grounded visit, visit-via-depot, and return-to-depot operators. For each state it reads the current location, visited set, load, vehicles used, capacity, and fleet limit; checks aggregate fleet-capacity feasibility; chooses a state-dependent first customer; filters and rotates the precomputed tour over the actual unvisited set; simulates direct visits and via-depot reloads; adds the final depot return; and adds explicit capacity-pressure and fleet-pressure components.",
+  "why": "The representative instances contain tens of customers, so the implementation avoids per-state matrix construction and sorting, using an O(n) filtered completion over precomputed task structure. Their heterogeneous demands and capacity-limited routes motivate using remaining demand, current load, and residual capacity both for dead-end detection and reload estimation. The small fixed fleet and frequent need for multiple depot-separated routes motivate explicit modeling of vehicles used and visit-via-depot transitions rather than a purely geometric tour. The dense explicit metric travel-cost matrices motivate reconstructing directed costs from grounded operators and retaining directionality. This is more informative than unvisited count because it responds to customer identities, route geometry, load, and location; more informative than a sum of depot distances because it includes customer-to-customer arcs and the current route endpoint; and more reliable than a purely geometric estimate because it detects fleet-capacity dead ends and prices forced depot reloads.",
+  "instance_patterns": [
+    "Single-depot CVRP with a mandatory final return to the depot",
+    "Tens of customers, making cheap O(n) state evaluation preferable",
+    "Small fleet with capacity-induced visit-via-depot route changes",
+    "Heterogeneous customer demands relative to vehicle capacity",
+    "Dense explicit pairwise travel costs that are symmetric in examples but treated as directed",
+    "Goals require every customer visited and the vehicle located at the depot"
+  ],
+  "design": [
+    "Geometric routing estimate via a state-anchored, filtered directed greedy tour",
+    "Capacity/resource bound using remaining demand, residual load capacity, and remaining fleet capacity",
+    "Operator-based travel-cost reconstruction",
+    "Resource dead-end detection",
+    "Precomputed tour positions and reusable evaluation scratch buffers"
+  ],
+  "complexity": "O(n) per state after O(n^2) task-dependent preprocessing, where n is the number of customers.",
+  "fallbacks": "Grounded routing operators are the primary cost source. Missing direct travel arcs are next recovered from simple travel-cost PNEs when available. Still-missing customer arcs are filled only when a directed return-to-depot leg and depot-to-customer leg provide a valid via-depot path. Construction fails with a clear HeuristicBuildError if directed depot legs, demands, resource variables, or a usable routing matrix cannot be recovered.",
+  "known_limitations": [
+    "The filtered base tour is a fast greedy approximation and may poorly represent the best completion for irregular customer subsets, despite being re-anchored from the current state.",
+    "The aggregate fleet-capacity test does not solve bin packing, so it cannot detect every capacity infeasibility caused by indivisible demands.",
+    "The capacity and fleet-pressure weights are intentionally non-admissible guidance terms and may overestimate remaining routing cost."
+  ]
+}

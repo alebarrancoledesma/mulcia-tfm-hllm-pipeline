@@ -1,0 +1,17 @@
+{
+  "what": "The heuristic precomputes semantic mappings for location and visited facts, resolves load and vehicles numeric IDs, recovers capacity, fleet size, and customer demands, and builds a directed travel-cost matrix primarily from grounded visit, visit-via-depot, and return-to-depot operators. At evaluation time it detects unvisited customers and the current location, checks aggregate fleet-capacity feasibility, estimates the first feasible direct or via-depot transition, adds a directed geometric continuation estimate and an explicit final depot return, then adds a capacity component for unavoidable future depot reloads.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with heterogeneous demands, explicit pairwise metric costs, a single depot, and materially different direct-visit versus depot-reload transitions. The estimate therefore uses location, load, vehicles used, and the exact unvisited set. It is more informative than customer count because it reflects directed travel and demand; more informative than a sum of depot distances because it accounts for inter-customer continuation and the current location; and more robust than a purely geometric estimate because it detects insufficient fleet capacity and charges for unavoidable route reloads. The implementation does not assume symmetry even though the examples are often symmetric in practice.",
+  "design": [
+    "Geometric routing estimate over unvisited customers using precomputed directed minimum outgoing costs",
+    "Capacity/resource lower bound using remaining demand, residual load capacity, and remaining vehicles",
+    "Operator-based travel-cost reconstruction from grounded routing actions",
+    "Dead-end detection for fleet-capacity infeasibility"
+  ],
+  "complexity": "O(n) per state, where n is the number of customers; all matrix construction and static minimum-outgoing computation occur once in new().",
+  "fallbacks": "Grounded operator costs are the primary source. Missing direct arcs are next filled from travel-cost PNEs when recognizable. Remaining missing arcs are filled only through known directed depot legs, and missing via-depot transitions are reconstructed as from-to-depot plus depot-to-customer. Construction fails with a clear error if customer demand/resource constants cannot be recovered or the resulting directed matrix cannot reach and return from every customer.",
+  "known_limitations": [
+    "The geometric continuation sum is a cheap relaxation and does not explicitly construct a capacity-feasible route ordering.",
+    "Demand, capacity, and max-vehicle recovery still depends on those function semantics being present in numeric variable names; the documented API exposes no alternative numeric-expression introspection.",
+    "The weighted continuation and reload terms are intentionally non-admissible and may overestimate or double-count some travel."
+  ]
+}

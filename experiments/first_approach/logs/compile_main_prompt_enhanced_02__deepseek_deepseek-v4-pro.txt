@@ -1,0 +1,23 @@
+   Compiling planforge-llm-cvrp v0.1.0 (/mnt/c/Code/GitHub/TFM/mulcia-tfm-PlanForge/experiments/llm-cvrp-runner)
+error[E0502]: cannot borrow `sc` as mutable because it is also borrowed as immutable
+   --> experiments/llm-cvrp-runner/src/main.rs:479:13
+    |
+478 |         for &c in &sc.unvisited {
+    |                   -------------
+    |                   ||
+    |                   |immutable borrow occurs here
+    |                   immutable borrow later used here
+479 |             sc.in_rem[c] = true;
+    |             ^^ mutable borrow occurs here
+
+warning: unused variable: `task`
+   --> experiments/llm-cvrp-runner/src/main.rs:354:13
+    |
+354 |         let task = eval_state.task();
+    |             ^^^^ help: if this is intentional, prefix it with an underscore: `_task`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+For more information about this error, try `rustc --explain E0502`.
+warning: `planforge-llm-cvrp` (bin "planforge-llm-cvrp") generated 1 warning
+error: could not compile `planforge-llm-cvrp` (bin "planforge-llm-cvrp") due to 1 previous error; 1 warning emitted

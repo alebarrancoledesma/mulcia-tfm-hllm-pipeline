@@ -1,0 +1,25 @@
+{
+  "what": "The heuristic precomputes semantic loc/visited mappings, directed travel costs, via-depot costs, optional demands and resource limits, and sorted customer adjacency lists. For each state it computes h = h_routing + h_capacity + h_vehicles. h_routing selects the cheapest currently legal direct or via-depot first transition, adds a bounded-neighbor geometric backbone over the current unvisited set, and includes a final directed return-to-depot leg. h_capacity estimates forced route boundaries from remaining demand and residual load. h_vehicles adds fleet pressure and detects insufficient remaining vehicles.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with heterogeneous demands, so current load, remaining demand, vehicles used, and residual fleet capacity explicitly affect the estimate and dead-end checks. Their dense explicit metric-cost matrices motivate reconstructing directed costs once from grounded visit, visit-via-depot, and return operators, then using pre-sorted local adjacency for cheap repeated evaluation. Several examples require frequent depot reloads while others have only a small number of large-capacity routes, motivating an explicit distinction between direct visits and visit-via-depot transitions rather than a purely geometric tour estimate. This is more informative than unvisited count because it uses actual directed costs and resources; more informative than summed depot distances because it recognizes customer clusters and the current location; and more informative than a capacity-blind geometric estimate because forced reloads, fleet pressure, and resource dead ends change the value.",
+  "instance_patterns": [
+    "Single-depot routing with a mandatory final return to the depot",
+    "Fleet-limited capacitated routing with both direct visits and depot reload transitions",
+    "Heterogeneous customer demands relative to vehicle capacity",
+    "Dense explicit pairwise travel-cost data, symmetric in examples but treated directionally",
+    "Tens of customers, making construction-time sorting and linear-time state evaluation appropriate"
+  ],
+  "design": [
+    "Operator-based travel-cost reconstruction from grounded actions",
+    "Geometric routing estimate over the current unvisited customer set",
+    "Capacity/resource lower-bound-style reload estimate",
+    "Resource dead-end detection",
+    "Precomputed sorted adjacency lists with bounded per-state probing"
+  ],
+  "complexity": "O(n) per state because each customer is scanned a constant number of times and each adjacency lookup probes at most a fixed number of pre-sorted neighbors. Construction uses O(n^2 log n) time in the worst case and O(n^2) storage for directed cost matrices.",
+  "fallbacks": "Missing operator arcs are first filled from exactly parsed travel-cost(from,to) PNEs. Remaining via-depot arcs are reconstructed only when both directed depot legs are known, and still-missing direct arcs may conservatively use that directed depot path. Missing exact capacity(), demand(...), or max_vehicles() PNEs do not fail construction: capacity and fleet limits become permissive and demands default to zero, while routing remains active. Construction fails clearly only if usable depot/customer routing costs cannot be reconstructed.",
+  "known_limitations": [
+    "The bounded-neighbor backbone is an approximation and can miss a useful connection outside the probed adjacency prefix.",
+    "When demand, capacity, or fleet PNEs are folded away by translation, resource terms degrade permissively and the heuristic becomes less capacity-aware.",
+    "The additive routing, reload, and fleet-pressure components are intentionally non-admissible and may double-count some routing structure."
+  ]
+}

@@ -1,0 +1,91 @@
+[1/10] copiando 01 -> runner
+>>> 01  gbfs(llm_001())  E-n13-k4
+    solved=yes  t=0.036167  exp=38902  cost=340.000000
+>>> 01  gbfs(llm_001())  E-n22-k4
+    solved=no  t=  exp=  cost=
+>>> 01  gbfs(llm_001())  E-n23-k3
+    solved=no  t=  exp=  cost=
+>>> 01  gbfs(llm_001())  E-n30-k3
+    solved=no  t=  exp=  cost=
+[2/10] copiando 02 -> runner
+>>> 02  gbfs(llm_001())  E-n13-k4
+    solved=yes  t=0.026493  exp=28858  cost=371.000000
+>>> 02  gbfs(llm_001())  E-n22-k4
+    solved=no  t=  exp=  cost=
+>>> 02  gbfs(llm_001())  E-n23-k3
+    solved=no  t=  exp=  cost=
+>>> 02  gbfs(llm_001())  E-n30-k3
+    solved=no  t=  exp=  cost=
+[3/10] copiando 03 -> runner
+>>> 03  gbfs(llm_001())  E-n13-k4
+    solved=yes  t=0.009968  exp=7369  cost=364.000000
+>>> 03  gbfs(llm_001())  E-n22-k4
+    solved=no  t=  exp=  cost=
+>>> 03  gbfs(llm_001())  E-n23-k3
+    solved=no  t=  exp=  cost=
+>>> 03  gbfs(llm_001())  E-n30-k3
+    solved=no  t=  exp=  cost=
+[4/10] copiando 04 -> runner
+>>> 04  gbfs(llm_001())  E-n13-k4
+    solved=yes  t=0.021472  exp=25341  cost=371.000000
+>>> 04  gbfs(llm_001())  E-n22-k4
+    solved=no  t=  exp=  cost=
+>>> 04  gbfs(llm_001())  E-n23-k3
+    solved=no  t=  exp=  cost=
+>>> 04  gbfs(llm_001())  E-n30-k3
+    solved=no  t=  exp=  cost=
+[5/10] copiando 05 -> runner
+>>> 05  gbfs(llm_001())  E-n13-k4
+    solved=yes  t=0.038684  exp=38902  cost=340.000000
+>>> 05  gbfs(llm_001())  E-n22-k4
+    solved=no  t=  exp=  cost=
+>>> 05  gbfs(llm_001())  E-n23-k3
+    solved=no  t=  exp=  cost=
+>>> 05  gbfs(llm_001())  E-n30-k3
+    solved=no  t=  exp=  cost=
+[6/10] copiando 06 -> runner
+>>> 06  gbfs(llm_001())  E-n13-k4
+    solved=yes  t=0.026200  exp=28213  cost=340.000000
+>>> 06  gbfs(llm_001())  E-n22-k4
+    solved=no  t=  exp=  cost=
+>>> 06  gbfs(llm_001())  E-n23-k3
+    solved=no  t=  exp=  cost=
+>>> 06  gbfs(llm_001())  E-n30-k3
+    solved=no  t=  exp=  cost=
+[7/10] copiando 07 -> runner
+>>> 07  gbfs(llm_001())  E-n13-k4
+    solved=yes  t=0.027471  exp=23485  cost=365.000000
+>>> 07  gbfs(llm_001())  E-n22-k4
+    solved=no  t=  exp=  cost=
+>>> 07  gbfs(llm_001())  E-n23-k3
+    solved=no  t=  exp=  cost=
+>>> 07  gbfs(llm_001())  E-n30-k3
+    solved=no  t=  exp=  cost=
+[8/10] copiando 08 -> runner
+>>> 08  gbfs(llm_001())  E-n13-k4
+    solved=yes  t=0.029337  exp=30794  cost=340.000000
+>>> 08  gbfs(llm_001())  E-n22-k4
+    solved=no  t=  exp=  cost=
+>>> 08  gbfs(llm_001())  E-n23-k3
+    solved=no  t=  exp=  cost=
+>>> 08  gbfs(llm_001())  E-n30-k3
+    solved=no  t=  exp=  cost=
+[9/10] copiando 09 -> runner
+>>> 09  gbfs(llm_001())  E-n13-k4
+    solved=yes  t=0.000773  exp=447  cost=327.000000
+>>> 09  gbfs(llm_001())  E-n22-k4
+    solved=no  t=  exp=  cost=
+>>> 09  gbfs(llm_001())  E-n23-k3
+    solved=no  t=  exp=  cost=
+>>> 09  gbfs(llm_001())  E-n30-k3
+    solved=no  t=  exp=  cost=
+[10/10] copiando 10 -> runner
+>>> 10  gbfs(llm_001())  E-n13-k4
+    solved=yes  t=0.027150  exp=30981  cost=371.000000
+>>> 10  gbfs(llm_001())  E-n22-k4
+    solved=no  t=  exp=  cost=
+>>> 10  gbfs(llm_001())  E-n23-k3
+    solved=no  t=  exp=  cost=
+>>> 10  gbfs(llm_001())  E-n30-k3
+    solved=no  t=  exp=  cost=
+listo: /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/experiments/experiment-E/metrics.csv (10 LLM)

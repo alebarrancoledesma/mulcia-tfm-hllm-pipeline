@@ -1,0 +1,10 @@
+{
+  "family": "P",
+  "split": "prompt",
+  "description": "Instancias P asequibles (n<=23) que ve el LLM: easy P-n16-k8, medium P-n20-k2, hard P-n23-k8. No se usan P-n40+ (mismos grafos que E-n51/E-n76/E-n101).",
+  "instances": [
+    "P-n16-k8",
+    "P-n20-k2",
+    "P-n23-k8"
+  ]
+}

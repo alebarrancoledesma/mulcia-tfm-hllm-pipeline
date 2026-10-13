@@ -1,0 +1,18 @@
+{
+  "what": "The heuristic precomputes static CVRP structure: propositional fact IDs for loc/visited, numeric IDs for load()/vehicles(), capacity, max_vehicles, customer demands, and travel costs. Travel costs are extracted primarily from grounded operator names and metric_operator_cost_from_initial_values, with fallback to numeric variable names and conservative via-depot estimation. During evaluation it reads current state, checks resource feasibility, then performs a greedy capacitated route completion over unvisited customers. The simulation chooses at each step the cheapest feasible next customer, considering both direct visits (if load permits) and visit-via-depot transitions (if vehicles remain), and adds the final return-to-depot cost. The returned value is the sum of simulated remaining routing costs.",
+  "why": "This design is more informative than unvisited-customer count because it uses exact metric costs and state (location, load, vehicles) to estimate the remaining distance. It is better than a sum of minimum depot distances because it models the actual route structure, considering direct vs via-depot choices and capacity constraints. The representative CVRP instances show thousands of explicit travel-cost entries and operator names like 'visit d1 c7' and 'visit-via-depot c4 c7', motivating operator-based extraction. The need to distinguish direct visits from depot reloads is captured by the two action types in the simulation. Adding resource infeasibility detection avoids exploring dead-end states.",
+  "design": [
+    "Operator-based travel cost reconstruction from grounded actions",
+    "Capacity/resource lower bound using remaining demand, load, capacity, and vehicles",
+    "Dead-end detection for resource-infeasible states",
+    "Precomputed nearest-neighbor sorted adjacency lists for fast greedy selection",
+    "Greedy capacitated completion of remaining route"
+  ],
+  "complexity": "O(n^2) per state in the worst case, where n is the number of customers. The simulation loops over unvisited customers and each step scans a pre-sorted neighbour list until the first feasible unvisited customer is found. In practice, with small n (tens), this is very fast. Precomputation in new() is O(n^2 log n) for sorting neighbour lists.",
+  "fallbacks": "If grounded operator extraction misses arcs, the code attempts to recover travel costs from numeric variable names containing 'travel-cost('. If some arcs remain missing, it uses via-depot costs (if available) or computes a conservative route via the depot using known depot legs. Demand values are read from numeric variables if present; otherwise a default of 1.0 is used, which weakens the infeasibility check but does not crash. The heuristic returns a large finite penalty (1e12) when resource infeasibility is detected or no feasible move exists.",
+  "known_limitations": [
+    "The greedy simulation is not optimal and may underestimate the true remaining cost, especially when future route choices require foresight.",
+    "Demand extraction relies on numeric variables named exactly 'demand(...)'; if PlanForge compiles them into complex derived expressions, the fallback default of 1.0 may weaken capacity checks.",
+    "Travel cost fallback uses via-depot or depot-leg sums, which can overestimate direct costs and mislead the greedy choice if many direct arcs are missing from operators."
+  ]
+}

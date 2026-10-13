@@ -1,0 +1,11 @@
+{
+  "family": "P",
+  "split": "dev",
+  "description": "Eval/ranking P. n16 y n20 (también en prompt) para que GBFS acabe y el ranking discrimine; n19-k2 y n22-k8 no vistas. Sin n23 (nadie acaba en 300s). Test intacto (n21-k2, n22-k2).",
+  "instances": [
+    "P-n16-k8",
+    "P-n19-k2",
+    "P-n20-k2",
+    "P-n22-k8"
+  ]
+}

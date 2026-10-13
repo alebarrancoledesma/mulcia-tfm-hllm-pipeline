@@ -1,0 +1,18 @@
+{
+  "what": "The heuristic precomputes semantic loc/visited fact mappings, exact IDs for load and vehicles, optional exact capacity/max-vehicles/demand values, and a directed routing matrix reconstructed primarily from grounded visit, visit-via-depot, and return-to-depot operators. At evaluation it combines three explicit components: a geometric routing estimate consisting of the cheapest feasible first transition, directed local-link costs, and a final depot return; a capacity term estimating forced future reloads; and a small load/fleet-pressure term. It also detects best-effort fleet-capacity dead ends and returns a large finite penalty.",
+  "why": "The representative instances are fleet-limited capacitated vehicle-routing problems with a single depot, heterogeneous demands, explicit metric travel-cost matrices, and route changes represented distinctly by direct visits versus depot reloads. This motivated an operator-derived directed cost model plus capacity and fleet reasoning. Unlike unvisited-customer count, the heuristic responds to customer geometry and current location. Unlike a sum of depot distances, it models inter-customer links and the actual first transition. Unlike a purely geometric estimate, it accounts for current load, forced depot reloads, vehicles already used, remaining fleet capacity, and resource-infeasible states.",
+  "design": [
+    "Geometric routing estimate over unvisited customers",
+    "Capacity/resource lower-bound-style reload estimate",
+    "Operator-based travel-cost reconstruction",
+    "Dead-end detection for resource-infeasible states",
+    "Task-dependent precomputation with reusable scratch buffers"
+  ],
+  "complexity": "O(n) per state, with O(n^2) directed cost-matrix and local-link preprocessing performed once in new().",
+  "fallbacks": "Missing direct arcs are first recovered from exact travel-cost(...) numeric names. Still-missing customer-to-customer arcs are conservatively filled through directed depot legs, and missing via-depot costs are reconstructed as customer-to-depot plus depot-to-customer. Missing exact capacity, max_vehicles, or demand PNEs use permissive defaults and only weaken resource reasoning. Construction fails clearly if indispensable directed depot legs or the resulting routing matrix cannot be reconstructed.",
+  "known_limitations": [
+    "The local-link chain surrogate uses each customer's statically nearest outgoing customer, which may already be visited and can therefore underestimate or mis-rank some residual tours.",
+    "The reload-unit cost is an average surcharge, so it does not model the optimal assignment of particular customers to particular vehicle routes.",
+    "When capacity, demand, or max-vehicle PNEs are folded away by translation, dead-end detection and forced-reload estimation degrade substantially; only the small generic load/vehicle pressure remains."
+  ]
+}

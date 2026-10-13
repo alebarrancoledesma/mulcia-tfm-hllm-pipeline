@@ -1,0 +1,2982 @@
+# Role
+
+You are a highly-skilled professor in AI planning and a proficient Rust programmer creating a domain-dependent heuristic function for a PDDL domain.
+
+The heuristic function you create will be used to guide a greedy best-first search to solve instances from this domain. Therefore, the heuristic does not need to be admissible.
+
+For a given state, the heuristic function should estimate the **remaining routing cost** required to serve all unvisited customers and reach a valid goal state as accurately as possible, while remaining efficiently computable.
+
+Your objective is **not** mathematical optimality of the estimate. Your objective is to produce a heuristic that is **likely to reduce the number of expanded nodes** during search on unseen instances from the same client distribution.
+
+Next, you will receive the domain definition and representative client instances. Study them to infer reusable structural properties. Then follow the hard design requirements at the end of this prompt.
+
+# Client Instance Family Profile
+
+The representative instances below come from the **target client distribution**. Use them to specialize your heuristic design to this family, without hardcoding particular object names or numeric values.
+
+Typical structural properties of this distribution:
+
+- **Single depot** constant `d1`; customers named `c2`, `c3`, ...
+- **Goal**: vehicle at depot and every customer visited.
+- **Metric objective**: minimize `total-cost`.
+- **Dynamic state dimensions that must influence the heuristic**:
+  - current location (`loc`)
+  - visited / unvisited customers (`visited`)
+  - current load (`load`)
+  - vehicles used (`vehicles`)
+- **Resource limits**: `capacity`, `max_vehicles`.
+- **Routing actions**:
+  - direct visit while load permits
+  - visit-via-depot when a new vehicle is needed
+  - final return-to-depot
+- **Travel costs**: explicit pairwise `travel-cost` values in the instance files; often symmetric in practice, but do not assume symmetry unless verified during construction.
+- **Scale**: tens of customers (e.g. 32–37 in the examples), a small fleet (e.g. 5 vehicles), capacity on the order of 100, heterogeneous customer demands.
+
+When writing `why`, explicitly mention **which patterns from the representative instances** motivated your design (for example: fleet-limited capacitated routing, explicit metric travel-cost matrix, need to distinguish direct visits from depot reloads).
+
+Do NOT memorize particular customers, demands, or distances from the examples. Generalize the **structure**, not the literals.
+
+# PDDL Domain
+
+The following is the PDDL domain for which the heuristic will be generated.
+
+Use it to understand the actions, predicates, numeric fluents, constraints and goal structure of the planning domain.
+
+```pddl
+(define (domain CVRP)
+    (:requirements :strips :typing :fluents :negative-preconditions)
+    (:types
+        place - object
+        depot - place
+        customer - place
+    )
+    (:constants
+        d1 - depot
+    )
+
+    (:predicates
+        (loc ?c - place)
+        (visited ?c - customer)
+    )
+
+    (:functions
+        (total-cost)
+        (load)
+        (vehicles)
+        (max_vehicles)
+        (capacity)
+        (travel-cost ?c1 ?c2 - place)
+        (demand ?c - customer)
+    )
+
+    (:action visit
+        :parameters (?from - place ?to - customer)
+        :precondition (and
+            (loc ?from)
+            (not (visited ?to))
+            (<= (+ (load) (demand ?to)) (capacity))
+        )
+        :effect (and
+            (not (loc ?from))
+            (loc ?to)
+            (visited ?to)
+            (increase (load) (demand ?to))
+            (increase (total-cost) (travel-cost ?from ?to))
+        )
+    )
+
+    (:action visit-via-depot
+        :parameters (?from - customer ?to - customer)
+        :precondition (and
+            (loc ?from)
+            (not (visited ?to))
+            (<= (+ (vehicles) 1) (max_vehicles))
+        )
+        :effect (and
+            (not (loc ?from))
+            (loc ?to)
+            (visited ?to)
+            (assign (load) (demand ?to))
+            (increase (vehicles) 1)
+            (increase
+                (total-cost)
+                (+ (travel-cost ?from d1) (travel-cost d1 ?to)))
+        )
+    )
+
+    (:action return-to-depot
+        :parameters (?from - customer)
+        :precondition (and
+            (loc ?from)
+            (forall
+                (?c - customer)
+                (visited ?c))
+        )
+        :effect (and
+            (not (loc ?from))
+            (loc d1)
+            (increase (total-cost) (travel-cost ?from d1))
+        )
+    )
+)
+```
+
+# Representative Instances
+
+The following problem instances are representative examples from the target client distribution.
+
+Use them to understand structural characteristics of the instances for which the heuristic is being generated.
+
+The final heuristic will be evaluated on **unseen instances from the same distribution**.
+
+## Representative instance 1
+```pddl
+(define (problem P-n16-k8.vrp)
+    (:domain CVRP)
+    (:objects
+        c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15 c16 - customer)
+    (:init
+        (= (total-cost) 0)
+        (loc d1)
+        (= (load) 0)
+        (= (vehicles) 1)
+        (= (max_vehicles) 8)
+        (= (capacity) 35)
+        (= (demand c2) 19)
+        (= (demand c3) 30)
+        (= (demand c4) 16)
+        (= (demand c5) 23)
+        (= (demand c6) 11)
+        (= (demand c7) 31)
+        (= (demand c8) 15)
+        (= (demand c9) 28)
+        (= (demand c10) 8)
+        (= (demand c11) 8)
+        (= (demand c12) 7)
+        (= (demand c13) 14)
+        (= (demand c14) 6)
+        (= (demand c15) 19)
+        (= (demand c16) 11)
+        (= (travel-cost d1 c2) 14)
+        (= (travel-cost d1 c3) 21)
+        (= (travel-cost d1 c4) 33)
+        (= (travel-cost d1 c5) 22)
+        (= (travel-cost d1 c6) 23)
+        (= (travel-cost d1 c7) 12)
+        (= (travel-cost d1 c8) 22)
+        (= (travel-cost d1 c9) 32)
+        (= (travel-cost d1 c10) 32)
+        (= (travel-cost d1 c11) 21)
+        (= (travel-cost d1 c12) 28)
+        (= (travel-cost d1 c13) 30)
+        (= (travel-cost d1 c14) 29)
+        (= (travel-cost d1 c15) 31)
+        (= (travel-cost d1 c16) 30)
+        (= (travel-cost c2 d1) 14)
+        (= (travel-cost c2 c3) 12)
+        (= (travel-cost c2 c4) 19)
+        (= (travel-cost c2 c5) 12)
+        (= (travel-cost c2 c6) 24)
+        (= (travel-cost c2 c7) 12)
+        (= (travel-cost c2 c8) 19)
+        (= (travel-cost c2 c9) 21)
+        (= (travel-cost c2 c10) 27)
+        (= (travel-cost c2 c11) 7)
+        (= (travel-cost c2 c12) 19)
+        (= (travel-cost c2 c13) 16)
+        (= (travel-cost c2 c14) 21)
+        (= (travel-cost c2 c15) 33)
+        (= (travel-cost c2 c16) 17)
+        (= (travel-cost c3 d1) 21)
+        (= (travel-cost c3 c2) 12)
+        (= (travel-cost c3 c4) 15)
+        (= (travel-cost c3 c5) 22)
+        (= (travel-cost c3 c6) 16)
+        (= (travel-cost c3 c7) 11)
+        (= (travel-cost c3 c8) 9)
+        (= (travel-cost c3 c9) 12)
+        (= (travel-cost c3 c10) 15)
+        (= (travel-cost c3 c11) 11)
+        (= (travel-cost c3 c12) 29)
+        (= (travel-cost c3 c13) 19)
+        (= (travel-cost c3 c14) 9)
+        (= (travel-cost c3 c15) 24)
+        (= (travel-cost c3 c16) 23)
+        (= (travel-cost c4 d1) 33)
+        (= (travel-cost c4 c2) 19)
+        (= (travel-cost c4 c3) 15)
+        (= (travel-cost c4 c5) 21)
+        (= (travel-cost c4 c6) 31)
+        (= (travel-cost c4 c7) 25)
+        (= (travel-cost c4 c8) 23)
+        (= (travel-cost c4 c9) 8)
+        (= (travel-cost c4 c10) 24)
+        (= (travel-cost c4 c11) 12)
+        (= (travel-cost c4 c12) 25)
+        (= (travel-cost c4 c13) 9)
+        (= (travel-cost c4 c14) 17)
+        (= (travel-cost c4 c15) 37)
+        (= (travel-cost c4 c16) 16)
+        (= (travel-cost c5 d1) 22)
+        (= (travel-cost c5 c2) 12)
+        (= (travel-cost c5 c3) 22)
+        (= (travel-cost c5 c4) 21)
+        (= (travel-cost c5 c6) 36)
+        (= (travel-cost c5 c7) 24)
+        (= (travel-cost c5 c8) 30)
+        (= (travel-cost c5 c9) 26)
+        (= (travel-cost c5 c10) 37)
+        (= (travel-cost c5 c11) 12)
+        (= (travel-cost c5 c12) 7)
+        (= (travel-cost c5 c13) 13)
+        (= (travel-cost c5 c14) 30)
+        (= (travel-cost c5 c15) 44)
+        (= (travel-cost c5 c16) 9)
+        (= (travel-cost c6 d1) 23)
+        (= (travel-cost c6 c2) 24)
+        (= (travel-cost c6 c3) 16)
+        (= (travel-cost c6 c4) 31)
+        (= (travel-cost c6 c5) 36)
+        (= (travel-cost c6 c7) 13)
+        (= (travel-cost c6 c8) 8)
+        (= (travel-cost c6 c9) 25)
+        (= (travel-cost c6 c10) 13)
+        (= (travel-cost c6 c11) 26)
+        (= (travel-cost c6 c12) 43)
+        (= (travel-cost c6 c13) 35)
+        (= (travel-cost c6 c14) 16)
+        (= (travel-cost c6 c15) 8)
+        (= (travel-cost c6 c16) 39)
+        (= (travel-cost c7 d1) 12)
+        (= (travel-cost c7 c2) 12)
+        (= (travel-cost c7 c3) 11)
+        (= (travel-cost c7 c4) 25)
+        (= (travel-cost c7 c5) 24)
+        (= (travel-cost c7 c6) 13)
+        (= (travel-cost c7 c8) 10)
+        (= (travel-cost c7 c9) 23)
+        (= (travel-cost c7 c10) 20)
+        (= (travel-cost c7 c11) 16)
+        (= (travel-cost c7 c12) 31)
+        (= (travel-cost c7 c13) 26)
+        (= (travel-cost c7 c14) 17)
+        (= (travel-cost c7 c15) 21)
+        (= (travel-cost c7 c16) 28)
+        (= (travel-cost c8 d1) 22)
+        (= (travel-cost c8 c2) 19)
+        (= (travel-cost c8 c3) 9)
+        (= (travel-cost c8 c4) 23)
+        (= (travel-cost c8 c5) 30)
+        (= (travel-cost c8 c6) 8)
+        (= (travel-cost c8 c7) 10)
+        (= (travel-cost c8 c9) 18)
+        (= (travel-cost c8 c10) 10)
+        (= (travel-cost c8 c11) 19)
+        (= (travel-cost c8 c12) 37)
+        (= (travel-cost c8 c13) 28)
+        (= (travel-cost c8 c14) 9)
+        (= (travel-cost c8 c15) 15)
+        (= (travel-cost c8 c16) 32)
+        (= (travel-cost c9 d1) 32)
+        (= (travel-cost c9 c2) 21)
+        (= (travel-cost c9 c3) 12)
+        (= (travel-cost c9 c4) 8)
+        (= (travel-cost c9 c5) 26)
+        (= (travel-cost c9 c6) 25)
+        (= (travel-cost c9 c7) 23)
+        (= (travel-cost c9 c8) 18)
+        (= (travel-cost c9 c10) 17)
+        (= (travel-cost c9 c11) 15)
+        (= (travel-cost c9 c12) 32)
+        (= (travel-cost c9 c13) 17)
+        (= (travel-cost c9 c14) 10)
+        (= (travel-cost c9 c15) 31)
+        (= (travel-cost c9 c16) 23)
+        (= (travel-cost c10 d1) 32)
+        (= (travel-cost c10 c2) 27)
+        (= (travel-cost c10 c3) 15)
+        (= (travel-cost c10 c4) 24)
+        (= (travel-cost c10 c5) 37)
+        (= (travel-cost c10 c6) 13)
+        (= (travel-cost c10 c7) 20)
+        (= (travel-cost c10 c8) 10)
+        (= (travel-cost c10 c9) 17)
+        (= (travel-cost c10 c11) 25)
+        (= (travel-cost c10 c12) 44)
+        (= (travel-cost c10 c13) 31)
+        (= (travel-cost c10 c14) 7)
+        (= (travel-cost c10 c15) 16)
+        (= (travel-cost c10 c16) 37)
+        (= (travel-cost c11 d1) 21)
+        (= (travel-cost c11 c2) 7)
+        (= (travel-cost c11 c3) 11)
+        (= (travel-cost c11 c4) 12)
+        (= (travel-cost c11 c5) 12)
+        (= (travel-cost c11 c6) 26)
+        (= (travel-cost c11 c7) 16)
+        (= (travel-cost c11 c8) 19)
+        (= (travel-cost c11 c9) 15)
+        (= (travel-cost c11 c10) 25)
+        (= (travel-cost c11 c12) 19)
+        (= (travel-cost c11 c13) 10)
+        (= (travel-cost c11 c14) 18)
+        (= (travel-cost c11 c15) 34)
+        (= (travel-cost c11 c16) 13)
+        (= (travel-cost c12 d1) 28)
+        (= (travel-cost c12 c2) 19)
+        (= (travel-cost c12 c3) 29)
+        (= (travel-cost c12 c4) 25)
+        (= (travel-cost c12 c5) 7)
+        (= (travel-cost c12 c6) 43)
+        (= (travel-cost c12 c7) 31)
+        (= (travel-cost c12 c8) 37)
+        (= (travel-cost c12 c9) 32)
+        (= (travel-cost c12 c10) 44)
+        (= (travel-cost c12 c11) 19)
+        (= (travel-cost c12 c13) 16)
+        (= (travel-cost c12 c14) 37)
+        (= (travel-cost c12 c15) 51)
+        (= (travel-cost c12 c16) 10)
+        (= (travel-cost c13 d1) 30)
+        (= (travel-cost c13 c2) 16)
+        (= (travel-cost c13 c3) 19)
+        (= (travel-cost c13 c4) 9)
+        (= (travel-cost c13 c5) 13)
+        (= (travel-cost c13 c6) 35)
+        (= (travel-cost c13 c7) 26)
+        (= (travel-cost c13 c8) 28)
+        (= (travel-cost c13 c9) 17)
+        (= (travel-cost c13 c10) 31)
+        (= (travel-cost c13 c11) 10)
+        (= (travel-cost c13 c12) 16)
+        (= (travel-cost c13 c14) 24)
+        (= (travel-cost c13 c15) 43)
+        (= (travel-cost c13 c16) 6)
+        (= (travel-cost c14 d1) 29)
+        (= (travel-cost c14 c2) 21)
+        (= (travel-cost c14 c3) 9)
+        (= (travel-cost c14 c4) 17)
+        (= (travel-cost c14 c5) 30)
+        (= (travel-cost c14 c6) 16)
+        (= (travel-cost c14 c7) 17)
+        (= (travel-cost c14 c8) 9)
+        (= (travel-cost c14 c9) 10)
+        (= (travel-cost c14 c10) 7)
+        (= (travel-cost c14 c11) 18)
+        (= (travel-cost c14 c12) 37)
+        (= (travel-cost c14 c13) 24)
+        (= (travel-cost c14 c15) 21)
+        (= (travel-cost c14 c16) 30)
+        (= (travel-cost c15 d1) 31)
+        (= (travel-cost c15 c2) 33)
+        (= (travel-cost c15 c3) 24)
+        (= (travel-cost c15 c4) 37)
+        (= (travel-cost c15 c5) 44)
+        (= (travel-cost c15 c6) 8)
+        (= (travel-cost c15 c7) 21)
+        (= (travel-cost c15 c8) 15)
+        (= (travel-cost c15 c9) 31)
+        (= (travel-cost c15 c10) 16)
+        (= (travel-cost c15 c11) 34)
+        (= (travel-cost c15 c12) 51)
+        (= (travel-cost c15 c13) 43)
+        (= (travel-cost c15 c14) 21)
+        (= (travel-cost c15 c16) 47)
+        (= (travel-cost c16 d1) 30)
+        (= (travel-cost c16 c2) 17)
+        (= (travel-cost c16 c3) 23)
+        (= (travel-cost c16 c4) 16)
+        (= (travel-cost c16 c5) 9)
+        (= (travel-cost c16 c6) 39)
+        (= (travel-cost c16 c7) 28)
+        (= (travel-cost c16 c8) 32)
+        (= (travel-cost c16 c9) 23)
+        (= (travel-cost c16 c10) 37)
+        (= (travel-cost c16 c11) 13)
+        (= (travel-cost c16 c12) 10)
+        (= (travel-cost c16 c13) 6)
+        (= (travel-cost c16 c14) 30)
+        (= (travel-cost c16 c15) 47)
+        (= (travel-cost-via-depot c2 c3) 35)
+        (= (travel-cost-via-depot c2 c4) 47)
+        (= (travel-cost-via-depot c2 c5) 36)
+        (= (travel-cost-via-depot c2 c6) 37)
+        (= (travel-cost-via-depot c2 c7) 26)
+        (= (travel-cost-via-depot c2 c8) 36)
+        (= (travel-cost-via-depot c2 c9) 46)
+        (= (travel-cost-via-depot c2 c10) 46)
+        (= (travel-cost-via-depot c2 c11) 35)
+        (= (travel-cost-via-depot c2 c12) 42)
+        (= (travel-cost-via-depot c2 c13) 44)
+        (= (travel-cost-via-depot c2 c14) 43)
+        (= (travel-cost-via-depot c2 c15) 45)
+        (= (travel-cost-via-depot c2 c16) 44)
+        (= (travel-cost-via-depot c3 c2) 35)
+        (= (travel-cost-via-depot c3 c4) 54)
+        (= (travel-cost-via-depot c3 c5) 43)
+        (= (travel-cost-via-depot c3 c6) 44)
+        (= (travel-cost-via-depot c3 c7) 33)
+        (= (travel-cost-via-depot c3 c8) 43)
+        (= (travel-cost-via-depot c3 c9) 53)
+        (= (travel-cost-via-depot c3 c10) 53)
+        (= (travel-cost-via-depot c3 c11) 42)
+        (= (travel-cost-via-depot c3 c12) 49)
+        (= (travel-cost-via-depot c3 c13) 51)
+        (= (travel-cost-via-depot c3 c14) 50)
+        (= (travel-cost-via-depot c3 c15) 52)
+        (= (travel-cost-via-depot c3 c16) 51)
+        (= (travel-cost-via-depot c4 c2) 47)
+        (= (travel-cost-via-depot c4 c3) 54)
+        (= (travel-cost-via-depot c4 c5) 55)
+        (= (travel-cost-via-depot c4 c6) 56)
+        (= (travel-cost-via-depot c4 c7) 45)
+        (= (travel-cost-via-depot c4 c8) 55)
+        (= (travel-cost-via-depot c4 c9) 65)
+        (= (travel-cost-via-depot c4 c10) 65)
+        (= (travel-cost-via-depot c4 c11) 54)
+        (= (travel-cost-via-depot c4 c12) 61)
+        (= (travel-cost-via-depot c4 c13) 63)
+        (= (travel-cost-via-depot c4 c14) 62)
+        (= (travel-cost-via-depot c4 c15) 64)
+        (= (travel-cost-via-depot c4 c16) 63)
+        (= (travel-cost-via-depot c5 c2) 36)
+        (= (travel-cost-via-depot c5 c3) 43)
+        (= (travel-cost-via-depot c5 c4) 55)
+        (= (travel-cost-via-depot c5 c6) 45)
+        (= (travel-cost-via-depot c5 c7) 34)
+        (= (travel-cost-via-depot c5 c8) 44)
+        (= (travel-cost-via-depot c5 c9) 54)
+        (= (travel-cost-via-depot c5 c10) 54)
+        (= (travel-cost-via-depot c5 c11) 43)
+        (= (travel-cost-via-depot c5 c12) 50)
+        (= (travel-cost-via-depot c5 c13) 52)
+        (= (travel-cost-via-depot c5 c14) 51)
+        (= (travel-cost-via-depot c5 c15) 53)
+        (= (travel-cost-via-depot c5 c16) 52)
+        (= (travel-cost-via-depot c6 c2) 37)
+        (= (travel-cost-via-depot c6 c3) 44)
+        (= (travel-cost-via-depot c6 c4) 56)
+        (= (travel-cost-via-depot c6 c5) 45)
+        (= (travel-cost-via-depot c6 c7) 35)
+        (= (travel-cost-via-depot c6 c8) 45)
+        (= (travel-cost-via-depot c6 c9) 55)
+        (= (travel-cost-via-depot c6 c10) 55)
+        (= (travel-cost-via-depot c6 c11) 44)
+        (= (travel-cost-via-depot c6 c12) 51)
+        (= (travel-cost-via-depot c6 c13) 53)
+        (= (travel-cost-via-depot c6 c14) 52)
+        (= (travel-cost-via-depot c6 c15) 54)
+        (= (travel-cost-via-depot c6 c16) 53)
+        (= (travel-cost-via-depot c7 c2) 26)
+        (= (travel-cost-via-depot c7 c3) 33)
+        (= (travel-cost-via-depot c7 c4) 45)
+        (= (travel-cost-via-depot c7 c5) 34)
+        (= (travel-cost-via-depot c7 c6) 35)
+        (= (travel-cost-via-depot c7 c8) 34)
+        (= (travel-cost-via-depot c7 c9) 44)
+        (= (travel-cost-via-depot c7 c10) 44)
+        (= (travel-cost-via-depot c7 c11) 33)
+        (= (travel-cost-via-depot c7 c12) 40)
+        (= (travel-cost-via-depot c7 c13) 42)
+        (= (travel-cost-via-depot c7 c14) 41)
+        (= (travel-cost-via-depot c7 c15) 43)
+        (= (travel-cost-via-depot c7 c16) 42)
+        (= (travel-cost-via-depot c8 c2) 36)
+        (= (travel-cost-via-depot c8 c3) 43)
+        (= (travel-cost-via-depot c8 c4) 55)
+        (= (travel-cost-via-depot c8 c5) 44)
+        (= (travel-cost-via-depot c8 c6) 45)
+        (= (travel-cost-via-depot c8 c7) 34)
+        (= (travel-cost-via-depot c8 c9) 54)
+        (= (travel-cost-via-depot c8 c10) 54)
+        (= (travel-cost-via-depot c8 c11) 43)
+        (= (travel-cost-via-depot c8 c12) 50)
+        (= (travel-cost-via-depot c8 c13) 52)
+        (= (travel-cost-via-depot c8 c14) 51)
+        (= (travel-cost-via-depot c8 c15) 53)
+        (= (travel-cost-via-depot c8 c16) 52)
+        (= (travel-cost-via-depot c9 c2) 46)
+        (= (travel-cost-via-depot c9 c3) 53)
+        (= (travel-cost-via-depot c9 c4) 65)
+        (= (travel-cost-via-depot c9 c5) 54)
+        (= (travel-cost-via-depot c9 c6) 55)
+        (= (travel-cost-via-depot c9 c7) 44)
+        (= (travel-cost-via-depot c9 c8) 54)
+        (= (travel-cost-via-depot c9 c10) 64)
+        (= (travel-cost-via-depot c9 c11) 53)
+        (= (travel-cost-via-depot c9 c12) 60)
+        (= (travel-cost-via-depot c9 c13) 62)
+        (= (travel-cost-via-depot c9 c14) 61)
+        (= (travel-cost-via-depot c9 c15) 63)
+        (= (travel-cost-via-depot c9 c16) 62)
+        (= (travel-cost-via-depot c10 c2) 46)
+        (= (travel-cost-via-depot c10 c3) 53)
+        (= (travel-cost-via-depot c10 c4) 65)
+        (= (travel-cost-via-depot c10 c5) 54)
+        (= (travel-cost-via-depot c10 c6) 55)
+        (= (travel-cost-via-depot c10 c7) 44)
+        (= (travel-cost-via-depot c10 c8) 54)
+        (= (travel-cost-via-depot c10 c9) 64)
+        (= (travel-cost-via-depot c10 c11) 53)
+        (= (travel-cost-via-depot c10 c12) 60)
+        (= (travel-cost-via-depot c10 c13) 62)
+        (= (travel-cost-via-depot c10 c14) 61)
+        (= (travel-cost-via-depot c10 c15) 63)
+        (= (travel-cost-via-depot c10 c16) 62)
+        (= (travel-cost-via-depot c11 c2) 35)
+        (= (travel-cost-via-depot c11 c3) 42)
+        (= (travel-cost-via-depot c11 c4) 54)
+        (= (travel-cost-via-depot c11 c5) 43)
+        (= (travel-cost-via-depot c11 c6) 44)
+        (= (travel-cost-via-depot c11 c7) 33)
+        (= (travel-cost-via-depot c11 c8) 43)
+        (= (travel-cost-via-depot c11 c9) 53)
+        (= (travel-cost-via-depot c11 c10) 53)
+        (= (travel-cost-via-depot c11 c12) 49)
+        (= (travel-cost-via-depot c11 c13) 51)
+        (= (travel-cost-via-depot c11 c14) 50)
+        (= (travel-cost-via-depot c11 c15) 52)
+        (= (travel-cost-via-depot c11 c16) 51)
+        (= (travel-cost-via-depot c12 c2) 42)
+        (= (travel-cost-via-depot c12 c3) 49)
+        (= (travel-cost-via-depot c12 c4) 61)
+        (= (travel-cost-via-depot c12 c5) 50)
+        (= (travel-cost-via-depot c12 c6) 51)
+        (= (travel-cost-via-depot c12 c7) 40)
+        (= (travel-cost-via-depot c12 c8) 50)
+        (= (travel-cost-via-depot c12 c9) 60)
+        (= (travel-cost-via-depot c12 c10) 60)
+        (= (travel-cost-via-depot c12 c11) 49)
+        (= (travel-cost-via-depot c12 c13) 58)
+        (= (travel-cost-via-depot c12 c14) 57)
+        (= (travel-cost-via-depot c12 c15) 59)
+        (= (travel-cost-via-depot c12 c16) 58)
+        (= (travel-cost-via-depot c13 c2) 44)
+        (= (travel-cost-via-depot c13 c3) 51)
+        (= (travel-cost-via-depot c13 c4) 63)
+        (= (travel-cost-via-depot c13 c5) 52)
+        (= (travel-cost-via-depot c13 c6) 53)
+        (= (travel-cost-via-depot c13 c7) 42)
+        (= (travel-cost-via-depot c13 c8) 52)
+        (= (travel-cost-via-depot c13 c9) 62)
+        (= (travel-cost-via-depot c13 c10) 62)
+        (= (travel-cost-via-depot c13 c11) 51)
+        (= (travel-cost-via-depot c13 c12) 58)
+        (= (travel-cost-via-depot c13 c14) 59)
+        (= (travel-cost-via-depot c13 c15) 61)
+        (= (travel-cost-via-depot c13 c16) 60)
+        (= (travel-cost-via-depot c14 c2) 43)
+        (= (travel-cost-via-depot c14 c3) 50)
+        (= (travel-cost-via-depot c14 c4) 62)
+        (= (travel-cost-via-depot c14 c5) 51)
+        (= (travel-cost-via-depot c14 c6) 52)
+        (= (travel-cost-via-depot c14 c7) 41)
+        (= (travel-cost-via-depot c14 c8) 51)
+        (= (travel-cost-via-depot c14 c9) 61)
+        (= (travel-cost-via-depot c14 c10) 61)
+        (= (travel-cost-via-depot c14 c11) 50)
+        (= (travel-cost-via-depot c14 c12) 57)
+        (= (travel-cost-via-depot c14 c13) 59)
+        (= (travel-cost-via-depot c14 c15) 60)
+        (= (travel-cost-via-depot c14 c16) 59)
+        (= (travel-cost-via-depot c15 c2) 45)
+        (= (travel-cost-via-depot c15 c3) 52)
+        (= (travel-cost-via-depot c15 c4) 64)
+        (= (travel-cost-via-depot c15 c5) 53)
+        (= (travel-cost-via-depot c15 c6) 54)
+        (= (travel-cost-via-depot c15 c7) 43)
+        (= (travel-cost-via-depot c15 c8) 53)
+        (= (travel-cost-via-depot c15 c9) 63)
+        (= (travel-cost-via-depot c15 c10) 63)
+        (= (travel-cost-via-depot c15 c11) 52)
+        (= (travel-cost-via-depot c15 c12) 59)
+        (= (travel-cost-via-depot c15 c13) 61)
+        (= (travel-cost-via-depot c15 c14) 60)
+        (= (travel-cost-via-depot c15 c16) 61)
+        (= (travel-cost-via-depot c16 c2) 44)
+        (= (travel-cost-via-depot c16 c3) 51)
+        (= (travel-cost-via-depot c16 c4) 63)
+        (= (travel-cost-via-depot c16 c5) 52)
+        (= (travel-cost-via-depot c16 c6) 53)
+        (= (travel-cost-via-depot c16 c7) 42)
+        (= (travel-cost-via-depot c16 c8) 52)
+        (= (travel-cost-via-depot c16 c9) 62)
+        (= (travel-cost-via-depot c16 c10) 62)
+        (= (travel-cost-via-depot c16 c11) 51)
+        (= (travel-cost-via-depot c16 c12) 58)
+        (= (travel-cost-via-depot c16 c13) 60)
+        (= (travel-cost-via-depot c16 c14) 59)
+        (= (travel-cost-via-depot c16 c15) 61)
+    )
+    (:goal
+         (and
+             (loc d1)
+             (visited c2)
+             (visited c3)
+             (visited c4)
+             (visited c5)
+             (visited c6)
+             (visited c7)
+             (visited c8)
+             (visited c9)
+             (visited c10)
+             (visited c11)
+             (visited c12)
+             (visited c13)
+             (visited c14)
+             (visited c15)
+             (visited c16)
+        )
+    )
+    (:metric minimize total-cost)
+)```
+
+## Representative instance 2
+```pddl
+(define (problem P-n20-k2.vrp)
+    (:domain CVRP)
+    (:objects
+        c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c20 - customer)
+    (:init
+        (= (total-cost) 0)
+        (loc d1)
+        (= (load) 0)
+        (= (vehicles) 1)
+        (= (max_vehicles) 2)
+        (= (capacity) 160)
+        (= (demand c2) 19)
+        (= (demand c3) 30)
+        (= (demand c4) 16)
+        (= (demand c5) 23)
+        (= (demand c6) 11)
+        (= (demand c7) 31)
+        (= (demand c8) 15)
+        (= (demand c9) 28)
+        (= (demand c10) 8)
+        (= (demand c11) 8)
+        (= (demand c12) 7)
+        (= (demand c13) 14)
+        (= (demand c14) 6)
+        (= (demand c15) 19)
+        (= (demand c16) 11)
+        (= (demand c17) 26)
+        (= (demand c18) 17)
+        (= (demand c19) 6)
+        (= (demand c20) 15)
+        (= (travel-cost d1 c2) 14)
+        (= (travel-cost d1 c3) 21)
+        (= (travel-cost d1 c4) 33)
+        (= (travel-cost d1 c5) 22)
+        (= (travel-cost d1 c6) 23)
+        (= (travel-cost d1 c7) 12)
+        (= (travel-cost d1 c8) 22)
+        (= (travel-cost d1 c9) 32)
+        (= (travel-cost d1 c10) 32)
+        (= (travel-cost d1 c11) 21)
+        (= (travel-cost d1 c12) 28)
+        (= (travel-cost d1 c13) 30)
+        (= (travel-cost d1 c14) 29)
+        (= (travel-cost d1 c15) 31)
+        (= (travel-cost d1 c16) 30)
+        (= (travel-cost d1 c17) 32)
+        (= (travel-cost d1 c18) 39)
+        (= (travel-cost d1 c19) 44)
+        (= (travel-cost d1 c20) 16)
+        (= (travel-cost c2 d1) 14)
+        (= (travel-cost c2 c3) 12)
+        (= (travel-cost c2 c4) 19)
+        (= (travel-cost c2 c5) 12)
+        (= (travel-cost c2 c6) 24)
+        (= (travel-cost c2 c7) 12)
+        (= (travel-cost c2 c8) 19)
+        (= (travel-cost c2 c9) 21)
+        (= (travel-cost c2 c10) 27)
+        (= (travel-cost c2 c11) 7)
+        (= (travel-cost c2 c12) 19)
+        (= (travel-cost c2 c13) 16)
+        (= (travel-cost c2 c14) 21)
+        (= (travel-cost c2 c15) 33)
+        (= (travel-cost c2 c16) 17)
+        (= (travel-cost c2 c17) 31)
+        (= (travel-cost c2 c18) 27)
+        (= (travel-cost c2 c19) 31)
+        (= (travel-cost c2 c20) 19)
+        (= (travel-cost c3 d1) 21)
+        (= (travel-cost c3 c2) 12)
+        (= (travel-cost c3 c4) 15)
+        (= (travel-cost c3 c5) 22)
+        (= (travel-cost c3 c6) 16)
+        (= (travel-cost c3 c7) 11)
+        (= (travel-cost c3 c8) 9)
+        (= (travel-cost c3 c9) 12)
+        (= (travel-cost c3 c10) 15)
+        (= (travel-cost c3 c11) 11)
+        (= (travel-cost c3 c12) 29)
+        (= (travel-cost c3 c13) 19)
+        (= (travel-cost c3 c14) 9)
+        (= (travel-cost c3 c15) 24)
+        (= (travel-cost c3 c16) 23)
+        (= (travel-cost c3 c17) 20)
+        (= (travel-cost c3 c18) 19)
+        (= (travel-cost c3 c19) 24)
+        (= (travel-cost c3 c20) 15)
+        (= (travel-cost c4 d1) 33)
+        (= (travel-cost c4 c2) 19)
+        (= (travel-cost c4 c3) 15)
+        (= (travel-cost c4 c5) 21)
+        (= (travel-cost c4 c6) 31)
+        (= (travel-cost c4 c7) 25)
+        (= (travel-cost c4 c8) 23)
+        (= (travel-cost c4 c9) 8)
+        (= (travel-cost c4 c10) 24)
+        (= (travel-cost c4 c11) 12)
+        (= (travel-cost c4 c12) 25)
+        (= (travel-cost c4 c13) 9)
+        (= (travel-cost c4 c14) 17)
+        (= (travel-cost c4 c15) 37)
+        (= (travel-cost c4 c16) 16)
+        (= (travel-cost c4 c17) 32)
+        (= (travel-cost c4 c18) 10)
+        (= (travel-cost c4 c19) 12)
+        (= (travel-cost c4 c20) 30)
+        (= (travel-cost c5 d1) 22)
+        (= (travel-cost c5 c2) 12)
+        (= (travel-cost c5 c3) 22)
+        (= (travel-cost c5 c4) 21)
+        (= (travel-cost c5 c6) 36)
+        (= (travel-cost c5 c7) 24)
+        (= (travel-cost c5 c8) 30)
+        (= (travel-cost c5 c9) 26)
+        (= (travel-cost c5 c10) 37)
+        (= (travel-cost c5 c11) 12)
+        (= (travel-cost c5 c12) 7)
+        (= (travel-cost c5 c13) 13)
+        (= (travel-cost c5 c14) 30)
+        (= (travel-cost c5 c15) 44)
+        (= (travel-cost c5 c16) 9)
+        (= (travel-cost c5 c17) 42)
+        (= (travel-cost c5 c18) 31)
+        (= (travel-cost c5 c19) 33)
+        (= (travel-cost c5 c20) 30)
+        (= (travel-cost c6 d1) 23)
+        (= (travel-cost c6 c2) 24)
+        (= (travel-cost c6 c3) 16)
+        (= (travel-cost c6 c4) 31)
+        (= (travel-cost c6 c5) 36)
+        (= (travel-cost c6 c7) 13)
+        (= (travel-cost c6 c8) 8)
+        (= (travel-cost c6 c9) 25)
+        (= (travel-cost c6 c10) 13)
+        (= (travel-cost c6 c11) 26)
+        (= (travel-cost c6 c12) 43)
+        (= (travel-cost c6 c13) 35)
+        (= (travel-cost c6 c14) 16)
+        (= (travel-cost c6 c15) 8)
+        (= (travel-cost c6 c16) 39)
+        (= (travel-cost c6 c17) 9)
+        (= (travel-cost c6 c18) 32)
+        (= (travel-cost c6 c19) 38)
+        (= (travel-cost c6 c20) 7)
+        (= (travel-cost c7 d1) 12)
+        (= (travel-cost c7 c2) 12)
+        (= (travel-cost c7 c3) 11)
+        (= (travel-cost c7 c4) 25)
+        (= (travel-cost c7 c5) 24)
+        (= (travel-cost c7 c6) 13)
+        (= (travel-cost c7 c8) 10)
+        (= (travel-cost c7 c9) 23)
+        (= (travel-cost c7 c10) 20)
+        (= (travel-cost c7 c11) 16)
+        (= (travel-cost c7 c12) 31)
+        (= (travel-cost c7 c13) 26)
+        (= (travel-cost c7 c14) 17)
+        (= (travel-cost c7 c15) 21)
+        (= (travel-cost c7 c16) 28)
+        (= (travel-cost c7 c17) 21)
+        (= (travel-cost c7 c18) 30)
+        (= (travel-cost c7 c19) 35)
+        (= (travel-cost c7 c20) 7)
+        (= (travel-cost c8 d1) 22)
+        (= (travel-cost c8 c2) 19)
+        (= (travel-cost c8 c3) 9)
+        (= (travel-cost c8 c4) 23)
+        (= (travel-cost c8 c5) 30)
+        (= (travel-cost c8 c6) 8)
+        (= (travel-cost c8 c7) 10)
+        (= (travel-cost c8 c9) 18)
+        (= (travel-cost c8 c10) 10)
+        (= (travel-cost c8 c11) 19)
+        (= (travel-cost c8 c12) 37)
+        (= (travel-cost c8 c13) 28)
+        (= (travel-cost c8 c14) 9)
+        (= (travel-cost c8 c15) 15)
+        (= (travel-cost c8 c16) 32)
+        (= (travel-cost c8 c17) 12)
+        (= (travel-cost c8 c18) 24)
+        (= (travel-cost c8 c19) 30)
+        (= (travel-cost c8 c20) 9)
+        (= (travel-cost c9 d1) 32)
+        (= (travel-cost c9 c2) 21)
+        (= (travel-cost c9 c3) 12)
+        (= (travel-cost c9 c4) 8)
+        (= (travel-cost c9 c5) 26)
+        (= (travel-cost c9 c6) 25)
+        (= (travel-cost c9 c7) 23)
+        (= (travel-cost c9 c8) 18)
+        (= (travel-cost c9 c10) 17)
+        (= (travel-cost c9 c11) 15)
+        (= (travel-cost c9 c12) 32)
+        (= (travel-cost c9 c13) 17)
+        (= (travel-cost c9 c14) 10)
+        (= (travel-cost c9 c15) 31)
+        (= (travel-cost c9 c16) 23)
+        (= (travel-cost c9 c17) 25)
+        (= (travel-cost c9 c18) 7)
+        (= (travel-cost c9 c19) 13)
+        (= (travel-cost c9 c20) 26)
+        (= (travel-cost c10 d1) 32)
+        (= (travel-cost c10 c2) 27)
+        (= (travel-cost c10 c3) 15)
+        (= (travel-cost c10 c4) 24)
+        (= (travel-cost c10 c5) 37)
+        (= (travel-cost c10 c6) 13)
+        (= (travel-cost c10 c7) 20)
+        (= (travel-cost c10 c8) 10)
+        (= (travel-cost c10 c9) 17)
+        (= (travel-cost c10 c11) 25)
+        (= (travel-cost c10 c12) 44)
+        (= (travel-cost c10 c13) 31)
+        (= (travel-cost c10 c14) 7)
+        (= (travel-cost c10 c15) 16)
+        (= (travel-cost c10 c16) 37)
+        (= (travel-cost c10 c17) 9)
+        (= (travel-cost c10 c18) 21)
+        (= (travel-cost c10 c19) 27)
+        (= (travel-cost c10 c20) 18)
+        (= (travel-cost c11 d1) 21)
+        (= (travel-cost c11 c2) 7)
+        (= (travel-cost c11 c3) 11)
+        (= (travel-cost c11 c4) 12)
+        (= (travel-cost c11 c5) 12)
+        (= (travel-cost c11 c6) 26)
+        (= (travel-cost c11 c7) 16)
+        (= (travel-cost c11 c8) 19)
+        (= (travel-cost c11 c9) 15)
+        (= (travel-cost c11 c10) 25)
+        (= (travel-cost c11 c12) 19)
+        (= (travel-cost c11 c13) 10)
+        (= (travel-cost c11 c14) 18)
+        (= (travel-cost c11 c15) 34)
+        (= (travel-cost c11 c16) 13)
+        (= (travel-cost c11 c17) 31)
+        (= (travel-cost c11 c18) 21)
+        (= (travel-cost c11 c19) 24)
+        (= (travel-cost c11 c20) 22)
+        (= (travel-cost c12 d1) 28)
+        (= (travel-cost c12 c2) 19)
+        (= (travel-cost c12 c3) 29)
+        (= (travel-cost c12 c4) 25)
+        (= (travel-cost c12 c5) 7)
+        (= (travel-cost c12 c6) 43)
+        (= (travel-cost c12 c7) 31)
+        (= (travel-cost c12 c8) 37)
+        (= (travel-cost c12 c9) 32)
+        (= (travel-cost c12 c10) 44)
+        (= (travel-cost c12 c11) 19)
+        (= (travel-cost c12 c13) 16)
+        (= (travel-cost c12 c14) 37)
+        (= (travel-cost c12 c15) 51)
+        (= (travel-cost c12 c16) 10)
+        (= (travel-cost c12 c17) 49)
+        (= (travel-cost c12 c18) 35)
+        (= (travel-cost c12 c19) 36)
+        (= (travel-cost c12 c20) 38)
+        (= (travel-cost c13 d1) 30)
+        (= (travel-cost c13 c2) 16)
+        (= (travel-cost c13 c3) 19)
+        (= (travel-cost c13 c4) 9)
+        (= (travel-cost c13 c5) 13)
+        (= (travel-cost c13 c6) 35)
+        (= (travel-cost c13 c7) 26)
+        (= (travel-cost c13 c8) 28)
+        (= (travel-cost c13 c9) 17)
+        (= (travel-cost c13 c10) 31)
+        (= (travel-cost c13 c11) 10)
+        (= (travel-cost c13 c12) 16)
+        (= (travel-cost c13 c14) 24)
+        (= (travel-cost c13 c15) 43)
+        (= (travel-cost c13 c16) 6)
+        (= (travel-cost c13 c17) 38)
+        (= (travel-cost c13 c18) 19)
+        (= (travel-cost c13 c19) 20)
+        (= (travel-cost c13 c20) 32)
+        (= (travel-cost c14 d1) 29)
+        (= (travel-cost c14 c2) 21)
+        (= (travel-cost c14 c3) 9)
+        (= (travel-cost c14 c4) 17)
+        (= (travel-cost c14 c5) 30)
+        (= (travel-cost c14 c6) 16)
+        (= (travel-cost c14 c7) 17)
+        (= (travel-cost c14 c8) 9)
+        (= (travel-cost c14 c9) 10)
+        (= (travel-cost c14 c10) 7)
+        (= (travel-cost c14 c11) 18)
+        (= (travel-cost c14 c12) 37)
+        (= (travel-cost c14 c13) 24)
+        (= (travel-cost c14 c15) 21)
+        (= (travel-cost c14 c16) 30)
+        (= (travel-cost c14 c17) 15)
+        (= (travel-cost c14 c18) 16)
+        (= (travel-cost c14 c19) 22)
+        (= (travel-cost c14 c20) 18)
+        (= (travel-cost c15 d1) 31)
+        (= (travel-cost c15 c2) 33)
+        (= (travel-cost c15 c3) 24)
+        (= (travel-cost c15 c4) 37)
+        (= (travel-cost c15 c5) 44)
+        (= (travel-cost c15 c6) 8)
+        (= (travel-cost c15 c7) 21)
+        (= (travel-cost c15 c8) 15)
+        (= (travel-cost c15 c9) 31)
+        (= (travel-cost c15 c10) 16)
+        (= (travel-cost c15 c11) 34)
+        (= (travel-cost c15 c12) 51)
+        (= (travel-cost c15 c13) 43)
+        (= (travel-cost c15 c14) 21)
+        (= (travel-cost c15 c16) 47)
+        (= (travel-cost c15 c17) 7)
+        (= (travel-cost c15 c18) 36)
+        (= (travel-cost c15 c19) 42)
+        (= (travel-cost c15 c20) 15)
+        (= (travel-cost c16 d1) 30)
+        (= (travel-cost c16 c2) 17)
+        (= (travel-cost c16 c3) 23)
+        (= (travel-cost c16 c4) 16)
+        (= (travel-cost c16 c5) 9)
+        (= (travel-cost c16 c6) 39)
+        (= (travel-cost c16 c7) 28)
+        (= (travel-cost c16 c8) 32)
+        (= (travel-cost c16 c9) 23)
+        (= (travel-cost c16 c10) 37)
+        (= (travel-cost c16 c11) 13)
+        (= (travel-cost c16 c12) 10)
+        (= (travel-cost c16 c13) 6)
+        (= (travel-cost c16 c14) 30)
+        (= (travel-cost c16 c15) 47)
+        (= (travel-cost c16 c17) 43)
+        (= (travel-cost c16 c18) 26)
+        (= (travel-cost c16 c19) 26)
+        (= (travel-cost c16 c20) 35)
+        (= (travel-cost c17 d1) 32)
+        (= (travel-cost c17 c2) 31)
+        (= (travel-cost c17 c3) 20)
+        (= (travel-cost c17 c4) 32)
+        (= (travel-cost c17 c5) 42)
+        (= (travel-cost c17 c6) 9)
+        (= (travel-cost c17 c7) 21)
+        (= (travel-cost c17 c8) 12)
+        (= (travel-cost c17 c9) 25)
+        (= (travel-cost c17 c10) 9)
+        (= (travel-cost c17 c11) 31)
+        (= (travel-cost c17 c12) 49)
+        (= (travel-cost c17 c13) 38)
+        (= (travel-cost c17 c14) 15)
+        (= (travel-cost c17 c15) 7)
+        (= (travel-cost c17 c16) 43)
+        (= (travel-cost c17 c18) 30)
+        (= (travel-cost c17 c19) 36)
+        (= (travel-cost c17 c20) 16)
+        (= (travel-cost c18 d1) 39)
+        (= (travel-cost c18 c2) 27)
+        (= (travel-cost c18 c3) 19)
+        (= (travel-cost c18 c4) 10)
+        (= (travel-cost c18 c5) 31)
+        (= (travel-cost c18 c6) 32)
+        (= (travel-cost c18 c7) 30)
+        (= (travel-cost c18 c8) 24)
+        (= (travel-cost c18 c9) 7)
+        (= (travel-cost c18 c10) 21)
+        (= (travel-cost c18 c11) 21)
+        (= (travel-cost c18 c12) 35)
+        (= (travel-cost c18 c13) 19)
+        (= (travel-cost c18 c14) 16)
+        (= (travel-cost c18 c15) 36)
+        (= (travel-cost c18 c16) 26)
+        (= (travel-cost c18 c17) 30)
+        (= (travel-cost c18 c19) 6)
+        (= (travel-cost c18 c20) 33)
+        (= (travel-cost c19 d1) 44)
+        (= (travel-cost c19 c2) 31)
+        (= (travel-cost c19 c3) 24)
+        (= (travel-cost c19 c4) 12)
+        (= (travel-cost c19 c5) 33)
+        (= (travel-cost c19 c6) 38)
+        (= (travel-cost c19 c7) 35)
+        (= (travel-cost c19 c8) 30)
+        (= (travel-cost c19 c9) 13)
+        (= (travel-cost c19 c10) 27)
+        (= (travel-cost c19 c11) 24)
+        (= (travel-cost c19 c12) 36)
+        (= (travel-cost c19 c13) 20)
+        (= (travel-cost c19 c14) 22)
+        (= (travel-cost c19 c15) 42)
+        (= (travel-cost c19 c16) 26)
+        (= (travel-cost c19 c17) 36)
+        (= (travel-cost c19 c18) 6)
+        (= (travel-cost c19 c20) 38)
+        (= (travel-cost c20 d1) 16)
+        (= (travel-cost c20 c2) 19)
+        (= (travel-cost c20 c3) 15)
+        (= (travel-cost c20 c4) 30)
+        (= (travel-cost c20 c5) 30)
+        (= (travel-cost c20 c6) 7)
+        (= (travel-cost c20 c7) 7)
+        (= (travel-cost c20 c8) 9)
+        (= (travel-cost c20 c9) 26)
+        (= (travel-cost c20 c10) 18)
+        (= (travel-cost c20 c11) 22)
+        (= (travel-cost c20 c12) 38)
+        (= (travel-cost c20 c13) 32)
+        (= (travel-cost c20 c14) 18)
+        (= (travel-cost c20 c15) 15)
+        (= (travel-cost c20 c16) 35)
+        (= (travel-cost c20 c17) 16)
+        (= (travel-cost c20 c18) 33)
+        (= (travel-cost c20 c19) 38)
+        (= (travel-cost-via-depot c2 c3) 35)
+        (= (travel-cost-via-depot c2 c4) 47)
+        (= (travel-cost-via-depot c2 c5) 36)
+        (= (travel-cost-via-depot c2 c6) 37)
+        (= (travel-cost-via-depot c2 c7) 26)
+        (= (travel-cost-via-depot c2 c8) 36)
+        (= (travel-cost-via-depot c2 c9) 46)
+        (= (travel-cost-via-depot c2 c10) 46)
+        (= (travel-cost-via-depot c2 c11) 35)
+        (= (travel-cost-via-depot c2 c12) 42)
+        (= (travel-cost-via-depot c2 c13) 44)
+        (= (travel-cost-via-depot c2 c14) 43)
+        (= (travel-cost-via-depot c2 c15) 45)
+        (= (travel-cost-via-depot c2 c16) 44)
+        (= (travel-cost-via-depot c2 c17) 46)
+        (= (travel-cost-via-depot c2 c18) 53)
+        (= (travel-cost-via-depot c2 c19) 58)
+        (= (travel-cost-via-depot c2 c20) 30)
+        (= (travel-cost-via-depot c3 c2) 35)
+        (= (travel-cost-via-depot c3 c4) 54)
+        (= (travel-cost-via-depot c3 c5) 43)
+        (= (travel-cost-via-depot c3 c6) 44)
+        (= (travel-cost-via-depot c3 c7) 33)
+        (= (travel-cost-via-depot c3 c8) 43)
+        (= (travel-cost-via-depot c3 c9) 53)
+        (= (travel-cost-via-depot c3 c10) 53)
+        (= (travel-cost-via-depot c3 c11) 42)
+        (= (travel-cost-via-depot c3 c12) 49)
+        (= (travel-cost-via-depot c3 c13) 51)
+        (= (travel-cost-via-depot c3 c14) 50)
+        (= (travel-cost-via-depot c3 c15) 52)
+        (= (travel-cost-via-depot c3 c16) 51)
+        (= (travel-cost-via-depot c3 c17) 53)
+        (= (travel-cost-via-depot c3 c18) 60)
+        (= (travel-cost-via-depot c3 c19) 65)
+        (= (travel-cost-via-depot c3 c20) 37)
+        (= (travel-cost-via-depot c4 c2) 47)
+        (= (travel-cost-via-depot c4 c3) 54)
+        (= (travel-cost-via-depot c4 c5) 55)
+        (= (travel-cost-via-depot c4 c6) 56)
+        (= (travel-cost-via-depot c4 c7) 45)
+        (= (travel-cost-via-depot c4 c8) 55)
+        (= (travel-cost-via-depot c4 c9) 65)
+        (= (travel-cost-via-depot c4 c10) 65)
+        (= (travel-cost-via-depot c4 c11) 54)
+        (= (travel-cost-via-depot c4 c12) 61)
+        (= (travel-cost-via-depot c4 c13) 63)
+        (= (travel-cost-via-depot c4 c14) 62)
+        (= (travel-cost-via-depot c4 c15) 64)
+        (= (travel-cost-via-depot c4 c16) 63)
+        (= (travel-cost-via-depot c4 c17) 65)
+        (= (travel-cost-via-depot c4 c18) 72)
+        (= (travel-cost-via-depot c4 c19) 77)
+        (= (travel-cost-via-depot c4 c20) 49)
+        (= (travel-cost-via-depot c5 c2) 36)
+        (= (travel-cost-via-depot c5 c3) 43)
+        (= (travel-cost-via-depot c5 c4) 55)
+        (= (travel-cost-via-depot c5 c6) 45)
+        (= (travel-cost-via-depot c5 c7) 34)
+        (= (travel-cost-via-depot c5 c8) 44)
+        (= (travel-cost-via-depot c5 c9) 54)
+        (= (travel-cost-via-depot c5 c10) 54)
+        (= (travel-cost-via-depot c5 c11) 43)
+        (= (travel-cost-via-depot c5 c12) 50)
+        (= (travel-cost-via-depot c5 c13) 52)
+        (= (travel-cost-via-depot c5 c14) 51)
+        (= (travel-cost-via-depot c5 c15) 53)
+        (= (travel-cost-via-depot c5 c16) 52)
+        (= (travel-cost-via-depot c5 c17) 54)
+        (= (travel-cost-via-depot c5 c18) 61)
+        (= (travel-cost-via-depot c5 c19) 66)
+        (= (travel-cost-via-depot c5 c20) 38)
+        (= (travel-cost-via-depot c6 c2) 37)
+        (= (travel-cost-via-depot c6 c3) 44)
+        (= (travel-cost-via-depot c6 c4) 56)
+        (= (travel-cost-via-depot c6 c5) 45)
+        (= (travel-cost-via-depot c6 c7) 35)
+        (= (travel-cost-via-depot c6 c8) 45)
+        (= (travel-cost-via-depot c6 c9) 55)
+        (= (travel-cost-via-depot c6 c10) 55)
+        (= (travel-cost-via-depot c6 c11) 44)
+        (= (travel-cost-via-depot c6 c12) 51)
+        (= (travel-cost-via-depot c6 c13) 53)
+        (= (travel-cost-via-depot c6 c14) 52)
+        (= (travel-cost-via-depot c6 c15) 54)
+        (= (travel-cost-via-depot c6 c16) 53)
+        (= (travel-cost-via-depot c6 c17) 55)
+        (= (travel-cost-via-depot c6 c18) 62)
+        (= (travel-cost-via-depot c6 c19) 67)
+        (= (travel-cost-via-depot c6 c20) 39)
+        (= (travel-cost-via-depot c7 c2) 26)
+        (= (travel-cost-via-depot c7 c3) 33)
+        (= (travel-cost-via-depot c7 c4) 45)
+        (= (travel-cost-via-depot c7 c5) 34)
+        (= (travel-cost-via-depot c7 c6) 35)
+        (= (travel-cost-via-depot c7 c8) 34)
+        (= (travel-cost-via-depot c7 c9) 44)
+        (= (travel-cost-via-depot c7 c10) 44)
+        (= (travel-cost-via-depot c7 c11) 33)
+        (= (travel-cost-via-depot c7 c12) 40)
+        (= (travel-cost-via-depot c7 c13) 42)
+        (= (travel-cost-via-depot c7 c14) 41)
+        (= (travel-cost-via-depot c7 c15) 43)
+        (= (travel-cost-via-depot c7 c16) 42)
+        (= (travel-cost-via-depot c7 c17) 44)
+        (= (travel-cost-via-depot c7 c18) 51)
+        (= (travel-cost-via-depot c7 c19) 56)
+        (= (travel-cost-via-depot c7 c20) 28)
+        (= (travel-cost-via-depot c8 c2) 36)
+        (= (travel-cost-via-depot c8 c3) 43)
+        (= (travel-cost-via-depot c8 c4) 55)
+        (= (travel-cost-via-depot c8 c5) 44)
+        (= (travel-cost-via-depot c8 c6) 45)
+        (= (travel-cost-via-depot c8 c7) 34)
+        (= (travel-cost-via-depot c8 c9) 54)
+        (= (travel-cost-via-depot c8 c10) 54)
+        (= (travel-cost-via-depot c8 c11) 43)
+        (= (travel-cost-via-depot c8 c12) 50)
+        (= (travel-cost-via-depot c8 c13) 52)
+        (= (travel-cost-via-depot c8 c14) 51)
+        (= (travel-cost-via-depot c8 c15) 53)
+        (= (travel-cost-via-depot c8 c16) 52)
+        (= (travel-cost-via-depot c8 c17) 54)
+        (= (travel-cost-via-depot c8 c18) 61)
+        (= (travel-cost-via-depot c8 c19) 66)
+        (= (travel-cost-via-depot c8 c20) 38)
+        (= (travel-cost-via-depot c9 c2) 46)
+        (= (travel-cost-via-depot c9 c3) 53)
+        (= (travel-cost-via-depot c9 c4) 65)
+        (= (travel-cost-via-depot c9 c5) 54)
+        (= (travel-cost-via-depot c9 c6) 55)
+        (= (travel-cost-via-depot c9 c7) 44)
+        (= (travel-cost-via-depot c9 c8) 54)
+        (= (travel-cost-via-depot c9 c10) 64)
+        (= (travel-cost-via-depot c9 c11) 53)
+        (= (travel-cost-via-depot c9 c12) 60)
+        (= (travel-cost-via-depot c9 c13) 62)
+        (= (travel-cost-via-depot c9 c14) 61)
+        (= (travel-cost-via-depot c9 c15) 63)
+        (= (travel-cost-via-depot c9 c16) 62)
+        (= (travel-cost-via-depot c9 c17) 64)
+        (= (travel-cost-via-depot c9 c18) 71)
+        (= (travel-cost-via-depot c9 c19) 76)
+        (= (travel-cost-via-depot c9 c20) 48)
+        (= (travel-cost-via-depot c10 c2) 46)
+        (= (travel-cost-via-depot c10 c3) 53)
+        (= (travel-cost-via-depot c10 c4) 65)
+        (= (travel-cost-via-depot c10 c5) 54)
+        (= (travel-cost-via-depot c10 c6) 55)
+        (= (travel-cost-via-depot c10 c7) 44)
+        (= (travel-cost-via-depot c10 c8) 54)
+        (= (travel-cost-via-depot c10 c9) 64)
+        (= (travel-cost-via-depot c10 c11) 53)
+        (= (travel-cost-via-depot c10 c12) 60)
+        (= (travel-cost-via-depot c10 c13) 62)
+        (= (travel-cost-via-depot c10 c14) 61)
+        (= (travel-cost-via-depot c10 c15) 63)
+        (= (travel-cost-via-depot c10 c16) 62)
+        (= (travel-cost-via-depot c10 c17) 64)
+        (= (travel-cost-via-depot c10 c18) 71)
+        (= (travel-cost-via-depot c10 c19) 76)
+        (= (travel-cost-via-depot c10 c20) 48)
+        (= (travel-cost-via-depot c11 c2) 35)
+        (= (travel-cost-via-depot c11 c3) 42)
+        (= (travel-cost-via-depot c11 c4) 54)
+        (= (travel-cost-via-depot c11 c5) 43)
+        (= (travel-cost-via-depot c11 c6) 44)
+        (= (travel-cost-via-depot c11 c7) 33)
+        (= (travel-cost-via-depot c11 c8) 43)
+        (= (travel-cost-via-depot c11 c9) 53)
+        (= (travel-cost-via-depot c11 c10) 53)
+        (= (travel-cost-via-depot c11 c12) 49)
+        (= (travel-cost-via-depot c11 c13) 51)
+        (= (travel-cost-via-depot c11 c14) 50)
+        (= (travel-cost-via-depot c11 c15) 52)
+        (= (travel-cost-via-depot c11 c16) 51)
+        (= (travel-cost-via-depot c11 c17) 53)
+        (= (travel-cost-via-depot c11 c18) 60)
+        (= (travel-cost-via-depot c11 c19) 65)
+        (= (travel-cost-via-depot c11 c20) 37)
+        (= (travel-cost-via-depot c12 c2) 42)
+        (= (travel-cost-via-depot c12 c3) 49)
+        (= (travel-cost-via-depot c12 c4) 61)
+        (= (travel-cost-via-depot c12 c5) 50)
+        (= (travel-cost-via-depot c12 c6) 51)
+        (= (travel-cost-via-depot c12 c7) 40)
+        (= (travel-cost-via-depot c12 c8) 50)
+        (= (travel-cost-via-depot c12 c9) 60)
+        (= (travel-cost-via-depot c12 c10) 60)
+        (= (travel-cost-via-depot c12 c11) 49)
+        (= (travel-cost-via-depot c12 c13) 58)
+        (= (travel-cost-via-depot c12 c14) 57)
+        (= (travel-cost-via-depot c12 c15) 59)
+        (= (travel-cost-via-depot c12 c16) 58)
+        (= (travel-cost-via-depot c12 c17) 60)
+        (= (travel-cost-via-depot c12 c18) 67)
+        (= (travel-cost-via-depot c12 c19) 72)
+        (= (travel-cost-via-depot c12 c20) 44)
+        (= (travel-cost-via-depot c13 c2) 44)
+        (= (travel-cost-via-depot c13 c3) 51)
+        (= (travel-cost-via-depot c13 c4) 63)
+        (= (travel-cost-via-depot c13 c5) 52)
+        (= (travel-cost-via-depot c13 c6) 53)
+        (= (travel-cost-via-depot c13 c7) 42)
+        (= (travel-cost-via-depot c13 c8) 52)
+        (= (travel-cost-via-depot c13 c9) 62)
+        (= (travel-cost-via-depot c13 c10) 62)
+        (= (travel-cost-via-depot c13 c11) 51)
+        (= (travel-cost-via-depot c13 c12) 58)
+        (= (travel-cost-via-depot c13 c14) 59)
+        (= (travel-cost-via-depot c13 c15) 61)
+        (= (travel-cost-via-depot c13 c16) 60)
+        (= (travel-cost-via-depot c13 c17) 62)
+        (= (travel-cost-via-depot c13 c18) 69)
+        (= (travel-cost-via-depot c13 c19) 74)
+        (= (travel-cost-via-depot c13 c20) 46)
+        (= (travel-cost-via-depot c14 c2) 43)
+        (= (travel-cost-via-depot c14 c3) 50)
+        (= (travel-cost-via-depot c14 c4) 62)
+        (= (travel-cost-via-depot c14 c5) 51)
+        (= (travel-cost-via-depot c14 c6) 52)
+        (= (travel-cost-via-depot c14 c7) 41)
+        (= (travel-cost-via-depot c14 c8) 51)
+        (= (travel-cost-via-depot c14 c9) 61)
+        (= (travel-cost-via-depot c14 c10) 61)
+        (= (travel-cost-via-depot c14 c11) 50)
+        (= (travel-cost-via-depot c14 c12) 57)
+        (= (travel-cost-via-depot c14 c13) 59)
+        (= (travel-cost-via-depot c14 c15) 60)
+        (= (travel-cost-via-depot c14 c16) 59)
+        (= (travel-cost-via-depot c14 c17) 61)
+        (= (travel-cost-via-depot c14 c18) 68)
+        (= (travel-cost-via-depot c14 c19) 73)
+        (= (travel-cost-via-depot c14 c20) 45)
+        (= (travel-cost-via-depot c15 c2) 45)
+        (= (travel-cost-via-depot c15 c3) 52)
+        (= (travel-cost-via-depot c15 c4) 64)
+        (= (travel-cost-via-depot c15 c5) 53)
+        (= (travel-cost-via-depot c15 c6) 54)
+        (= (travel-cost-via-depot c15 c7) 43)
+        (= (travel-cost-via-depot c15 c8) 53)
+        (= (travel-cost-via-depot c15 c9) 63)
+        (= (travel-cost-via-depot c15 c10) 63)
+        (= (travel-cost-via-depot c15 c11) 52)
+        (= (travel-cost-via-depot c15 c12) 59)
+        (= (travel-cost-via-depot c15 c13) 61)
+        (= (travel-cost-via-depot c15 c14) 60)
+        (= (travel-cost-via-depot c15 c16) 61)
+        (= (travel-cost-via-depot c15 c17) 63)
+        (= (travel-cost-via-depot c15 c18) 70)
+        (= (travel-cost-via-depot c15 c19) 75)
+        (= (travel-cost-via-depot c15 c20) 47)
+        (= (travel-cost-via-depot c16 c2) 44)
+        (= (travel-cost-via-depot c16 c3) 51)
+        (= (travel-cost-via-depot c16 c4) 63)
+        (= (travel-cost-via-depot c16 c5) 52)
+        (= (travel-cost-via-depot c16 c6) 53)
+        (= (travel-cost-via-depot c16 c7) 42)
+        (= (travel-cost-via-depot c16 c8) 52)
+        (= (travel-cost-via-depot c16 c9) 62)
+        (= (travel-cost-via-depot c16 c10) 62)
+        (= (travel-cost-via-depot c16 c11) 51)
+        (= (travel-cost-via-depot c16 c12) 58)
+        (= (travel-cost-via-depot c16 c13) 60)
+        (= (travel-cost-via-depot c16 c14) 59)
+        (= (travel-cost-via-depot c16 c15) 61)
+        (= (travel-cost-via-depot c16 c17) 62)
+        (= (travel-cost-via-depot c16 c18) 69)
+        (= (travel-cost-via-depot c16 c19) 74)
+        (= (travel-cost-via-depot c16 c20) 46)
+        (= (travel-cost-via-depot c17 c2) 46)
+        (= (travel-cost-via-depot c17 c3) 53)
+        (= (travel-cost-via-depot c17 c4) 65)
+        (= (travel-cost-via-depot c17 c5) 54)
+        (= (travel-cost-via-depot c17 c6) 55)
+        (= (travel-cost-via-depot c17 c7) 44)
+        (= (travel-cost-via-depot c17 c8) 54)
+        (= (travel-cost-via-depot c17 c9) 64)
+        (= (travel-cost-via-depot c17 c10) 64)
+        (= (travel-cost-via-depot c17 c11) 53)
+        (= (travel-cost-via-depot c17 c12) 60)
+        (= (travel-cost-via-depot c17 c13) 62)
+        (= (travel-cost-via-depot c17 c14) 61)
+        (= (travel-cost-via-depot c17 c15) 63)
+        (= (travel-cost-via-depot c17 c16) 62)
+        (= (travel-cost-via-depot c17 c18) 71)
+        (= (travel-cost-via-depot c17 c19) 76)
+        (= (travel-cost-via-depot c17 c20) 48)
+        (= (travel-cost-via-depot c18 c2) 53)
+        (= (travel-cost-via-depot c18 c3) 60)
+        (= (travel-cost-via-depot c18 c4) 72)
+        (= (travel-cost-via-depot c18 c5) 61)
+        (= (travel-cost-via-depot c18 c6) 62)
+        (= (travel-cost-via-depot c18 c7) 51)
+        (= (travel-cost-via-depot c18 c8) 61)
+        (= (travel-cost-via-depot c18 c9) 71)
+        (= (travel-cost-via-depot c18 c10) 71)
+        (= (travel-cost-via-depot c18 c11) 60)
+        (= (travel-cost-via-depot c18 c12) 67)
+        (= (travel-cost-via-depot c18 c13) 69)
+        (= (travel-cost-via-depot c18 c14) 68)
+        (= (travel-cost-via-depot c18 c15) 70)
+        (= (travel-cost-via-depot c18 c16) 69)
+        (= (travel-cost-via-depot c18 c17) 71)
+        (= (travel-cost-via-depot c18 c19) 83)
+        (= (travel-cost-via-depot c18 c20) 55)
+        (= (travel-cost-via-depot c19 c2) 58)
+        (= (travel-cost-via-depot c19 c3) 65)
+        (= (travel-cost-via-depot c19 c4) 77)
+        (= (travel-cost-via-depot c19 c5) 66)
+        (= (travel-cost-via-depot c19 c6) 67)
+        (= (travel-cost-via-depot c19 c7) 56)
+        (= (travel-cost-via-depot c19 c8) 66)
+        (= (travel-cost-via-depot c19 c9) 76)
+        (= (travel-cost-via-depot c19 c10) 76)
+        (= (travel-cost-via-depot c19 c11) 65)
+        (= (travel-cost-via-depot c19 c12) 72)
+        (= (travel-cost-via-depot c19 c13) 74)
+        (= (travel-cost-via-depot c19 c14) 73)
+        (= (travel-cost-via-depot c19 c15) 75)
+        (= (travel-cost-via-depot c19 c16) 74)
+        (= (travel-cost-via-depot c19 c17) 76)
+        (= (travel-cost-via-depot c19 c18) 83)
+        (= (travel-cost-via-depot c19 c20) 60)
+        (= (travel-cost-via-depot c20 c2) 30)
+        (= (travel-cost-via-depot c20 c3) 37)
+        (= (travel-cost-via-depot c20 c4) 49)
+        (= (travel-cost-via-depot c20 c5) 38)
+        (= (travel-cost-via-depot c20 c6) 39)
+        (= (travel-cost-via-depot c20 c7) 28)
+        (= (travel-cost-via-depot c20 c8) 38)
+        (= (travel-cost-via-depot c20 c9) 48)
+        (= (travel-cost-via-depot c20 c10) 48)
+        (= (travel-cost-via-depot c20 c11) 37)
+        (= (travel-cost-via-depot c20 c12) 44)
+        (= (travel-cost-via-depot c20 c13) 46)
+        (= (travel-cost-via-depot c20 c14) 45)
+        (= (travel-cost-via-depot c20 c15) 47)
+        (= (travel-cost-via-depot c20 c16) 46)
+        (= (travel-cost-via-depot c20 c17) 48)
+        (= (travel-cost-via-depot c20 c18) 55)
+        (= (travel-cost-via-depot c20 c19) 60)
+    )
+    (:goal
+         (and
+             (loc d1)
+             (visited c2)
+             (visited c3)
+             (visited c4)
+             (visited c5)
+             (visited c6)
+             (visited c7)
+             (visited c8)
+             (visited c9)
+             (visited c10)
+             (visited c11)
+             (visited c12)
+             (visited c13)
+             (visited c14)
+             (visited c15)
+             (visited c16)
+             (visited c17)
+             (visited c18)
+             (visited c19)
+             (visited c20)
+        )
+    )
+    (:metric minimize total-cost)
+)```
+
+## Representative instance 3
+```pddl
+(define (problem P-n23-k8.vrp)
+    (:domain CVRP)
+    (:objects
+        c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c20 c21 c22 c23 - customer)
+    (:init
+        (= (total-cost) 0)
+        (loc d1)
+        (= (load) 0)
+        (= (vehicles) 1)
+        (= (max_vehicles) 8)
+        (= (capacity) 40)
+        (= (demand c2) 7)
+        (= (demand c3) 30)
+        (= (demand c4) 16)
+        (= (demand c5) 23)
+        (= (demand c6) 11)
+        (= (demand c7) 19)
+        (= (demand c8) 15)
+        (= (demand c9) 28)
+        (= (demand c10) 8)
+        (= (demand c11) 8)
+        (= (demand c12) 7)
+        (= (demand c13) 14)
+        (= (demand c14) 6)
+        (= (demand c15) 19)
+        (= (demand c16) 11)
+        (= (demand c17) 12)
+        (= (demand c18) 26)
+        (= (demand c19) 17)
+        (= (demand c20) 6)
+        (= (demand c21) 15)
+        (= (demand c22) 5)
+        (= (demand c23) 10)
+        (= (travel-cost d1 c2) 14)
+        (= (travel-cost d1 c3) 21)
+        (= (travel-cost d1 c4) 33)
+        (= (travel-cost d1 c5) 22)
+        (= (travel-cost d1 c6) 23)
+        (= (travel-cost d1 c7) 12)
+        (= (travel-cost d1 c8) 22)
+        (= (travel-cost d1 c9) 32)
+        (= (travel-cost d1 c10) 32)
+        (= (travel-cost d1 c11) 21)
+        (= (travel-cost d1 c12) 28)
+        (= (travel-cost d1 c13) 30)
+        (= (travel-cost d1 c14) 29)
+        (= (travel-cost d1 c15) 31)
+        (= (travel-cost d1 c16) 30)
+        (= (travel-cost d1 c17) 10)
+        (= (travel-cost d1 c18) 32)
+        (= (travel-cost d1 c19) 39)
+        (= (travel-cost d1 c20) 44)
+        (= (travel-cost d1 c21) 16)
+        (= (travel-cost d1 c22) 2)
+        (= (travel-cost d1 c23) 26)
+        (= (travel-cost c2 d1) 14)
+        (= (travel-cost c2 c3) 12)
+        (= (travel-cost c2 c4) 19)
+        (= (travel-cost c2 c5) 12)
+        (= (travel-cost c2 c6) 24)
+        (= (travel-cost c2 c7) 12)
+        (= (travel-cost c2 c8) 19)
+        (= (travel-cost c2 c9) 21)
+        (= (travel-cost c2 c10) 27)
+        (= (travel-cost c2 c11) 7)
+        (= (travel-cost c2 c12) 19)
+        (= (travel-cost c2 c13) 16)
+        (= (travel-cost c2 c14) 21)
+        (= (travel-cost c2 c15) 33)
+        (= (travel-cost c2 c16) 17)
+        (= (travel-cost c2 c17) 6)
+        (= (travel-cost c2 c18) 31)
+        (= (travel-cost c2 c19) 27)
+        (= (travel-cost c2 c20) 31)
+        (= (travel-cost c2 c21) 19)
+        (= (travel-cost c2 c22) 14)
+        (= (travel-cost c2 c23) 24)
+        (= (travel-cost c3 d1) 21)
+        (= (travel-cost c3 c2) 12)
+        (= (travel-cost c3 c4) 15)
+        (= (travel-cost c3 c5) 22)
+        (= (travel-cost c3 c6) 16)
+        (= (travel-cost c3 c7) 11)
+        (= (travel-cost c3 c8) 9)
+        (= (travel-cost c3 c9) 12)
+        (= (travel-cost c3 c10) 15)
+        (= (travel-cost c3 c11) 11)
+        (= (travel-cost c3 c12) 29)
+        (= (travel-cost c3 c13) 19)
+        (= (travel-cost c3 c14) 9)
+        (= (travel-cost c3 c15) 24)
+        (= (travel-cost c3 c16) 23)
+        (= (travel-cost c3 c17) 11)
+        (= (travel-cost c3 c18) 20)
+        (= (travel-cost c3 c19) 19)
+        (= (travel-cost c3 c20) 24)
+        (= (travel-cost c3 c21) 15)
+        (= (travel-cost c3 c22) 20)
+        (= (travel-cost c3 c23) 14)
+        (= (travel-cost c4 d1) 33)
+        (= (travel-cost c4 c2) 19)
+        (= (travel-cost c4 c3) 15)
+        (= (travel-cost c4 c5) 21)
+        (= (travel-cost c4 c6) 31)
+        (= (travel-cost c4 c7) 25)
+        (= (travel-cost c4 c8) 23)
+        (= (travel-cost c4 c9) 8)
+        (= (travel-cost c4 c10) 24)
+        (= (travel-cost c4 c11) 12)
+        (= (travel-cost c4 c12) 25)
+        (= (travel-cost c4 c13) 9)
+        (= (travel-cost c4 c14) 17)
+        (= (travel-cost c4 c15) 37)
+        (= (travel-cost c4 c16) 16)
+        (= (travel-cost c4 c17) 23)
+        (= (travel-cost c4 c18) 32)
+        (= (travel-cost c4 c19) 10)
+        (= (travel-cost c4 c20) 12)
+        (= (travel-cost c4 c21) 30)
+        (= (travel-cost c4 c22) 32)
+        (= (travel-cost c4 c23) 27)
+        (= (travel-cost c5 d1) 22)
+        (= (travel-cost c5 c2) 12)
+        (= (travel-cost c5 c3) 22)
+        (= (travel-cost c5 c4) 21)
+        (= (travel-cost c5 c6) 36)
+        (= (travel-cost c5 c7) 24)
+        (= (travel-cost c5 c8) 30)
+        (= (travel-cost c5 c9) 26)
+        (= (travel-cost c5 c10) 37)
+        (= (travel-cost c5 c11) 12)
+        (= (travel-cost c5 c12) 7)
+        (= (travel-cost c5 c13) 13)
+        (= (travel-cost c5 c14) 30)
+        (= (travel-cost c5 c15) 44)
+        (= (travel-cost c5 c16) 9)
+        (= (travel-cost c5 c17) 17)
+        (= (travel-cost c5 c18) 42)
+        (= (travel-cost c5 c19) 31)
+        (= (travel-cost c5 c20) 33)
+        (= (travel-cost c5 c21) 30)
+        (= (travel-cost c5 c22) 23)
+        (= (travel-cost c5 c23) 35)
+        (= (travel-cost c6 d1) 23)
+        (= (travel-cost c6 c2) 24)
+        (= (travel-cost c6 c3) 16)
+        (= (travel-cost c6 c4) 31)
+        (= (travel-cost c6 c5) 36)
+        (= (travel-cost c6 c7) 13)
+        (= (travel-cost c6 c8) 8)
+        (= (travel-cost c6 c9) 25)
+        (= (travel-cost c6 c10) 13)
+        (= (travel-cost c6 c11) 26)
+        (= (travel-cost c6 c12) 43)
+        (= (travel-cost c6 c13) 35)
+        (= (travel-cost c6 c14) 16)
+        (= (travel-cost c6 c15) 8)
+        (= (travel-cost c6 c16) 39)
+        (= (travel-cost c6 c17) 19)
+        (= (travel-cost c6 c18) 9)
+        (= (travel-cost c6 c19) 32)
+        (= (travel-cost c6 c20) 38)
+        (= (travel-cost c6 c21) 7)
+        (= (travel-cost c6 c22) 21)
+        (= (travel-cost c6 c23) 6)
+        (= (travel-cost c7 d1) 12)
+        (= (travel-cost c7 c2) 12)
+        (= (travel-cost c7 c3) 11)
+        (= (travel-cost c7 c4) 25)
+        (= (travel-cost c7 c5) 24)
+        (= (travel-cost c7 c6) 13)
+        (= (travel-cost c7 c8) 10)
+        (= (travel-cost c7 c9) 23)
+        (= (travel-cost c7 c10) 20)
+        (= (travel-cost c7 c11) 16)
+        (= (travel-cost c7 c12) 31)
+        (= (travel-cost c7 c13) 26)
+        (= (travel-cost c7 c14) 17)
+        (= (travel-cost c7 c15) 21)
+        (= (travel-cost c7 c16) 28)
+        (= (travel-cost c7 c17) 6)
+        (= (travel-cost c7 c18) 21)
+        (= (travel-cost c7 c19) 30)
+        (= (travel-cost c7 c20) 35)
+        (= (travel-cost c7 c21) 7)
+        (= (travel-cost c7 c22) 10)
+        (= (travel-cost c7 c23) 15)
+        (= (travel-cost c8 d1) 22)
+        (= (travel-cost c8 c2) 19)
+        (= (travel-cost c8 c3) 9)
+        (= (travel-cost c8 c4) 23)
+        (= (travel-cost c8 c5) 30)
+        (= (travel-cost c8 c6) 8)
+        (= (travel-cost c8 c7) 10)
+        (= (travel-cost c8 c9) 18)
+        (= (travel-cost c8 c10) 10)
+        (= (travel-cost c8 c11) 19)
+        (= (travel-cost c8 c12) 37)
+        (= (travel-cost c8 c13) 28)
+        (= (travel-cost c8 c14) 9)
+        (= (travel-cost c8 c15) 15)
+        (= (travel-cost c8 c16) 32)
+        (= (travel-cost c8 c17) 15)
+        (= (travel-cost c8 c18) 12)
+        (= (travel-cost c8 c19) 24)
+        (= (travel-cost c8 c20) 30)
+        (= (travel-cost c8 c21) 9)
+        (= (travel-cost c8 c22) 20)
+        (= (travel-cost c8 c23) 6)
+        (= (travel-cost c9 d1) 32)
+        (= (travel-cost c9 c2) 21)
+        (= (travel-cost c9 c3) 12)
+        (= (travel-cost c9 c4) 8)
+        (= (travel-cost c9 c5) 26)
+        (= (travel-cost c9 c6) 25)
+        (= (travel-cost c9 c7) 23)
+        (= (travel-cost c9 c8) 18)
+        (= (travel-cost c9 c10) 17)
+        (= (travel-cost c9 c11) 15)
+        (= (travel-cost c9 c12) 32)
+        (= (travel-cost c9 c13) 17)
+        (= (travel-cost c9 c14) 10)
+        (= (travel-cost c9 c15) 31)
+        (= (travel-cost c9 c16) 23)
+        (= (travel-cost c9 c17) 22)
+        (= (travel-cost c9 c18) 25)
+        (= (travel-cost c9 c19) 7)
+        (= (travel-cost c9 c20) 13)
+        (= (travel-cost c9 c21) 26)
+        (= (travel-cost c9 c22) 31)
+        (= (travel-cost c9 c23) 21)
+        (= (travel-cost c10 d1) 32)
+        (= (travel-cost c10 c2) 27)
+        (= (travel-cost c10 c3) 15)
+        (= (travel-cost c10 c4) 24)
+        (= (travel-cost c10 c5) 37)
+        (= (travel-cost c10 c6) 13)
+        (= (travel-cost c10 c7) 20)
+        (= (travel-cost c10 c8) 10)
+        (= (travel-cost c10 c9) 17)
+        (= (travel-cost c10 c11) 25)
+        (= (travel-cost c10 c12) 44)
+        (= (travel-cost c10 c13) 31)
+        (= (travel-cost c10 c14) 7)
+        (= (travel-cost c10 c15) 16)
+        (= (travel-cost c10 c16) 37)
+        (= (travel-cost c10 c17) 24)
+        (= (travel-cost c10 c18) 9)
+        (= (travel-cost c10 c19) 21)
+        (= (travel-cost c10 c20) 27)
+        (= (travel-cost c10 c21) 18)
+        (= (travel-cost c10 c22) 30)
+        (= (travel-cost c10 c23) 8)
+        (= (travel-cost c11 d1) 21)
+        (= (travel-cost c11 c2) 7)
+        (= (travel-cost c11 c3) 11)
+        (= (travel-cost c11 c4) 12)
+        (= (travel-cost c11 c5) 12)
+        (= (travel-cost c11 c6) 26)
+        (= (travel-cost c11 c7) 16)
+        (= (travel-cost c11 c8) 19)
+        (= (travel-cost c11 c9) 15)
+        (= (travel-cost c11 c10) 25)
+        (= (travel-cost c11 c12) 19)
+        (= (travel-cost c11 c13) 10)
+        (= (travel-cost c11 c14) 18)
+        (= (travel-cost c11 c15) 34)
+        (= (travel-cost c11 c16) 13)
+        (= (travel-cost c11 c17) 12)
+        (= (travel-cost c11 c18) 31)
+        (= (travel-cost c11 c19) 21)
+        (= (travel-cost c11 c20) 24)
+        (= (travel-cost c11 c21) 22)
+        (= (travel-cost c11 c22) 21)
+        (= (travel-cost c11 c23) 24)
+        (= (travel-cost c12 d1) 28)
+        (= (travel-cost c12 c2) 19)
+        (= (travel-cost c12 c3) 29)
+        (= (travel-cost c12 c4) 25)
+        (= (travel-cost c12 c5) 7)
+        (= (travel-cost c12 c6) 43)
+        (= (travel-cost c12 c7) 31)
+        (= (travel-cost c12 c8) 37)
+        (= (travel-cost c12 c9) 32)
+        (= (travel-cost c12 c10) 44)
+        (= (travel-cost c12 c11) 19)
+        (= (travel-cost c12 c13) 16)
+        (= (travel-cost c12 c14) 37)
+        (= (travel-cost c12 c15) 51)
+        (= (travel-cost c12 c16) 10)
+        (= (travel-cost c12 c17) 25)
+        (= (travel-cost c12 c18) 49)
+        (= (travel-cost c12 c19) 35)
+        (= (travel-cost c12 c20) 36)
+        (= (travel-cost c12 c21) 38)
+        (= (travel-cost c12 c22) 29)
+        (= (travel-cost c12 c23) 42)
+        (= (travel-cost c13 d1) 30)
+        (= (travel-cost c13 c2) 16)
+        (= (travel-cost c13 c3) 19)
+        (= (travel-cost c13 c4) 9)
+        (= (travel-cost c13 c5) 13)
+        (= (travel-cost c13 c6) 35)
+        (= (travel-cost c13 c7) 26)
+        (= (travel-cost c13 c8) 28)
+        (= (travel-cost c13 c9) 17)
+        (= (travel-cost c13 c10) 31)
+        (= (travel-cost c13 c11) 10)
+        (= (travel-cost c13 c12) 16)
+        (= (travel-cost c13 c14) 24)
+        (= (travel-cost c13 c15) 43)
+        (= (travel-cost c13 c16) 6)
+        (= (travel-cost c13 c17) 22)
+        (= (travel-cost c13 c18) 38)
+        (= (travel-cost c13 c19) 19)
+        (= (travel-cost c13 c20) 20)
+        (= (travel-cost c13 c21) 32)
+        (= (travel-cost c13 c22) 30)
+        (= (travel-cost c13 c23) 33)
+        (= (travel-cost c14 d1) 29)
+        (= (travel-cost c14 c2) 21)
+        (= (travel-cost c14 c3) 9)
+        (= (travel-cost c14 c4) 17)
+        (= (travel-cost c14 c5) 30)
+        (= (travel-cost c14 c6) 16)
+        (= (travel-cost c14 c7) 17)
+        (= (travel-cost c14 c8) 9)
+        (= (travel-cost c14 c9) 10)
+        (= (travel-cost c14 c10) 7)
+        (= (travel-cost c14 c11) 18)
+        (= (travel-cost c14 c12) 37)
+        (= (travel-cost c14 c13) 24)
+        (= (travel-cost c14 c15) 21)
+        (= (travel-cost c14 c16) 30)
+        (= (travel-cost c14 c17) 20)
+        (= (travel-cost c14 c18) 15)
+        (= (travel-cost c14 c19) 16)
+        (= (travel-cost c14 c20) 22)
+        (= (travel-cost c14 c21) 18)
+        (= (travel-cost c14 c22) 28)
+        (= (travel-cost c14 c23) 11)
+        (= (travel-cost c15 d1) 31)
+        (= (travel-cost c15 c2) 33)
+        (= (travel-cost c15 c3) 24)
+        (= (travel-cost c15 c4) 37)
+        (= (travel-cost c15 c5) 44)
+        (= (travel-cost c15 c6) 8)
+        (= (travel-cost c15 c7) 21)
+        (= (travel-cost c15 c8) 15)
+        (= (travel-cost c15 c9) 31)
+        (= (travel-cost c15 c10) 16)
+        (= (travel-cost c15 c11) 34)
+        (= (travel-cost c15 c12) 51)
+        (= (travel-cost c15 c13) 43)
+        (= (travel-cost c15 c14) 21)
+        (= (travel-cost c15 c16) 47)
+        (= (travel-cost c15 c17) 28)
+        (= (travel-cost c15 c18) 7)
+        (= (travel-cost c15 c19) 36)
+        (= (travel-cost c15 c20) 42)
+        (= (travel-cost c15 c21) 15)
+        (= (travel-cost c15 c22) 29)
+        (= (travel-cost c15 c23) 10)
+        (= (travel-cost c16 d1) 30)
+        (= (travel-cost c16 c2) 17)
+        (= (travel-cost c16 c3) 23)
+        (= (travel-cost c16 c4) 16)
+        (= (travel-cost c16 c5) 9)
+        (= (travel-cost c16 c6) 39)
+        (= (travel-cost c16 c7) 28)
+        (= (travel-cost c16 c8) 32)
+        (= (travel-cost c16 c9) 23)
+        (= (travel-cost c16 c10) 37)
+        (= (travel-cost c16 c11) 13)
+        (= (travel-cost c16 c12) 10)
+        (= (travel-cost c16 c13) 6)
+        (= (travel-cost c16 c14) 30)
+        (= (travel-cost c16 c15) 47)
+        (= (travel-cost c16 c17) 23)
+        (= (travel-cost c16 c18) 43)
+        (= (travel-cost c16 c19) 26)
+        (= (travel-cost c16 c20) 26)
+        (= (travel-cost c16 c21) 35)
+        (= (travel-cost c16 c22) 30)
+        (= (travel-cost c16 c23) 37)
+        (= (travel-cost c17 d1) 10)
+        (= (travel-cost c17 c2) 6)
+        (= (travel-cost c17 c3) 11)
+        (= (travel-cost c17 c4) 23)
+        (= (travel-cost c17 c5) 17)
+        (= (travel-cost c17 c6) 19)
+        (= (travel-cost c17 c7) 6)
+        (= (travel-cost c17 c8) 15)
+        (= (travel-cost c17 c9) 22)
+        (= (travel-cost c17 c10) 24)
+        (= (travel-cost c17 c11) 12)
+        (= (travel-cost c17 c12) 25)
+        (= (travel-cost c17 c13) 22)
+        (= (travel-cost c17 c14) 20)
+        (= (travel-cost c17 c15) 28)
+        (= (travel-cost c17 c16) 23)
+        (= (travel-cost c17 c18) 26)
+        (= (travel-cost c17 c19) 29)
+        (= (travel-cost c17 c20) 34)
+        (= (travel-cost c17 c21) 13)
+        (= (travel-cost c17 c22) 9)
+        (= (travel-cost c17 c23) 20)
+        (= (travel-cost c18 d1) 32)
+        (= (travel-cost c18 c2) 31)
+        (= (travel-cost c18 c3) 20)
+        (= (travel-cost c18 c4) 32)
+        (= (travel-cost c18 c5) 42)
+        (= (travel-cost c18 c6) 9)
+        (= (travel-cost c18 c7) 21)
+        (= (travel-cost c18 c8) 12)
+        (= (travel-cost c18 c9) 25)
+        (= (travel-cost c18 c10) 9)
+        (= (travel-cost c18 c11) 31)
+        (= (travel-cost c18 c12) 49)
+        (= (travel-cost c18 c13) 38)
+        (= (travel-cost c18 c14) 15)
+        (= (travel-cost c18 c15) 7)
+        (= (travel-cost c18 c16) 43)
+        (= (travel-cost c18 c17) 26)
+        (= (travel-cost c18 c19) 30)
+        (= (travel-cost c18 c20) 36)
+        (= (travel-cost c18 c21) 16)
+        (= (travel-cost c18 c22) 30)
+        (= (travel-cost c18 c23) 6)
+        (= (travel-cost c19 d1) 39)
+        (= (travel-cost c19 c2) 27)
+        (= (travel-cost c19 c3) 19)
+        (= (travel-cost c19 c4) 10)
+        (= (travel-cost c19 c5) 31)
+        (= (travel-cost c19 c6) 32)
+        (= (travel-cost c19 c7) 30)
+        (= (travel-cost c19 c8) 24)
+        (= (travel-cost c19 c9) 7)
+        (= (travel-cost c19 c10) 21)
+        (= (travel-cost c19 c11) 21)
+        (= (travel-cost c19 c12) 35)
+        (= (travel-cost c19 c13) 19)
+        (= (travel-cost c19 c14) 16)
+        (= (travel-cost c19 c15) 36)
+        (= (travel-cost c19 c16) 26)
+        (= (travel-cost c19 c17) 29)
+        (= (travel-cost c19 c18) 30)
+        (= (travel-cost c19 c20) 6)
+        (= (travel-cost c19 c21) 33)
+        (= (travel-cost c19 c22) 38)
+        (= (travel-cost c19 c23) 27)
+        (= (travel-cost c20 d1) 44)
+        (= (travel-cost c20 c2) 31)
+        (= (travel-cost c20 c3) 24)
+        (= (travel-cost c20 c4) 12)
+        (= (travel-cost c20 c5) 33)
+        (= (travel-cost c20 c6) 38)
+        (= (travel-cost c20 c7) 35)
+        (= (travel-cost c20 c8) 30)
+        (= (travel-cost c20 c9) 13)
+        (= (travel-cost c20 c10) 27)
+        (= (travel-cost c20 c11) 24)
+        (= (travel-cost c20 c12) 36)
+        (= (travel-cost c20 c13) 20)
+        (= (travel-cost c20 c14) 22)
+        (= (travel-cost c20 c15) 42)
+        (= (travel-cost c20 c16) 26)
+        (= (travel-cost c20 c17) 34)
+        (= (travel-cost c20 c18) 36)
+        (= (travel-cost c20 c19) 6)
+        (= (travel-cost c20 c21) 38)
+        (= (travel-cost c20 c22) 43)
+        (= (travel-cost c20 c23) 33)
+        (= (travel-cost c21 d1) 16)
+        (= (travel-cost c21 c2) 19)
+        (= (travel-cost c21 c3) 15)
+        (= (travel-cost c21 c4) 30)
+        (= (travel-cost c21 c5) 30)
+        (= (travel-cost c21 c6) 7)
+        (= (travel-cost c21 c7) 7)
+        (= (travel-cost c21 c8) 9)
+        (= (travel-cost c21 c9) 26)
+        (= (travel-cost c21 c10) 18)
+        (= (travel-cost c21 c11) 22)
+        (= (travel-cost c21 c12) 38)
+        (= (travel-cost c21 c13) 32)
+        (= (travel-cost c21 c14) 18)
+        (= (travel-cost c21 c15) 15)
+        (= (travel-cost c21 c16) 35)
+        (= (travel-cost c21 c17) 13)
+        (= (travel-cost c21 c18) 16)
+        (= (travel-cost c21 c19) 33)
+        (= (travel-cost c21 c20) 38)
+        (= (travel-cost c21 c22) 14)
+        (= (travel-cost c21 c23) 11)
+        (= (travel-cost c22 d1) 2)
+        (= (travel-cost c22 c2) 14)
+        (= (travel-cost c22 c3) 20)
+        (= (travel-cost c22 c4) 32)
+        (= (travel-cost c22 c5) 23)
+        (= (travel-cost c22 c6) 21)
+        (= (travel-cost c22 c7) 10)
+        (= (travel-cost c22 c8) 20)
+        (= (travel-cost c22 c9) 31)
+        (= (travel-cost c22 c10) 30)
+        (= (travel-cost c22 c11) 21)
+        (= (travel-cost c22 c12) 29)
+        (= (travel-cost c22 c13) 30)
+        (= (travel-cost c22 c14) 28)
+        (= (travel-cost c22 c15) 29)
+        (= (travel-cost c22 c16) 30)
+        (= (travel-cost c22 c17) 9)
+        (= (travel-cost c22 c18) 30)
+        (= (travel-cost c22 c19) 38)
+        (= (travel-cost c22 c20) 43)
+        (= (travel-cost c22 c21) 14)
+        (= (travel-cost c22 c23) 24)
+        (= (travel-cost c23 d1) 26)
+        (= (travel-cost c23 c2) 24)
+        (= (travel-cost c23 c3) 14)
+        (= (travel-cost c23 c4) 27)
+        (= (travel-cost c23 c5) 35)
+        (= (travel-cost c23 c6) 6)
+        (= (travel-cost c23 c7) 15)
+        (= (travel-cost c23 c8) 6)
+        (= (travel-cost c23 c9) 21)
+        (= (travel-cost c23 c10) 8)
+        (= (travel-cost c23 c11) 24)
+        (= (travel-cost c23 c12) 42)
+        (= (travel-cost c23 c13) 33)
+        (= (travel-cost c23 c14) 11)
+        (= (travel-cost c23 c15) 10)
+        (= (travel-cost c23 c16) 37)
+        (= (travel-cost c23 c17) 20)
+        (= (travel-cost c23 c18) 6)
+        (= (travel-cost c23 c19) 27)
+        (= (travel-cost c23 c20) 33)
+        (= (travel-cost c23 c21) 11)
+        (= (travel-cost c23 c22) 24)
+        (= (travel-cost-via-depot c2 c3) 35)
+        (= (travel-cost-via-depot c2 c4) 47)
+        (= (travel-cost-via-depot c2 c5) 36)
+        (= (travel-cost-via-depot c2 c6) 37)
+        (= (travel-cost-via-depot c2 c7) 26)
+        (= (travel-cost-via-depot c2 c8) 36)
+        (= (travel-cost-via-depot c2 c9) 46)
+        (= (travel-cost-via-depot c2 c10) 46)
+        (= (travel-cost-via-depot c2 c11) 35)
+        (= (travel-cost-via-depot c2 c12) 42)
+        (= (travel-cost-via-depot c2 c13) 44)
+        (= (travel-cost-via-depot c2 c14) 43)
+        (= (travel-cost-via-depot c2 c15) 45)
+        (= (travel-cost-via-depot c2 c16) 44)
+        (= (travel-cost-via-depot c2 c17) 24)
+        (= (travel-cost-via-depot c2 c18) 46)
+        (= (travel-cost-via-depot c2 c19) 53)
+        (= (travel-cost-via-depot c2 c20) 58)
+        (= (travel-cost-via-depot c2 c21) 30)
+        (= (travel-cost-via-depot c2 c22) 16)
+        (= (travel-cost-via-depot c2 c23) 40)
+        (= (travel-cost-via-depot c3 c2) 35)
+        (= (travel-cost-via-depot c3 c4) 54)
+        (= (travel-cost-via-depot c3 c5) 43)
+        (= (travel-cost-via-depot c3 c6) 44)
+        (= (travel-cost-via-depot c3 c7) 33)
+        (= (travel-cost-via-depot c3 c8) 43)
+        (= (travel-cost-via-depot c3 c9) 53)
+        (= (travel-cost-via-depot c3 c10) 53)
+        (= (travel-cost-via-depot c3 c11) 42)
+        (= (travel-cost-via-depot c3 c12) 49)
+        (= (travel-cost-via-depot c3 c13) 51)
+        (= (travel-cost-via-depot c3 c14) 50)
+        (= (travel-cost-via-depot c3 c15) 52)
+        (= (travel-cost-via-depot c3 c16) 51)
+        (= (travel-cost-via-depot c3 c17) 31)
+        (= (travel-cost-via-depot c3 c18) 53)
+        (= (travel-cost-via-depot c3 c19) 60)
+        (= (travel-cost-via-depot c3 c20) 65)
+        (= (travel-cost-via-depot c3 c21) 37)
+        (= (travel-cost-via-depot c3 c22) 23)
+        (= (travel-cost-via-depot c3 c23) 47)
+        (= (travel-cost-via-depot c4 c2) 47)
+        (= (travel-cost-via-depot c4 c3) 54)
+        (= (travel-cost-via-depot c4 c5) 55)
+        (= (travel-cost-via-depot c4 c6) 56)
+        (= (travel-cost-via-depot c4 c7) 45)
+        (= (travel-cost-via-depot c4 c8) 55)
+        (= (travel-cost-via-depot c4 c9) 65)
+        (= (travel-cost-via-depot c4 c10) 65)
+        (= (travel-cost-via-depot c4 c11) 54)
+        (= (travel-cost-via-depot c4 c12) 61)
+        (= (travel-cost-via-depot c4 c13) 63)
+        (= (travel-cost-via-depot c4 c14) 62)
+        (= (travel-cost-via-depot c4 c15) 64)
+        (= (travel-cost-via-depot c4 c16) 63)
+        (= (travel-cost-via-depot c4 c17) 43)
+        (= (travel-cost-via-depot c4 c18) 65)
+        (= (travel-cost-via-depot c4 c19) 72)
+        (= (travel-cost-via-depot c4 c20) 77)
+        (= (travel-cost-via-depot c4 c21) 49)
+        (= (travel-cost-via-depot c4 c22) 35)
+        (= (travel-cost-via-depot c4 c23) 59)
+        (= (travel-cost-via-depot c5 c2) 36)
+        (= (travel-cost-via-depot c5 c3) 43)
+        (= (travel-cost-via-depot c5 c4) 55)
+        (= (travel-cost-via-depot c5 c6) 45)
+        (= (travel-cost-via-depot c5 c7) 34)
+        (= (travel-cost-via-depot c5 c8) 44)
+        (= (travel-cost-via-depot c5 c9) 54)
+        (= (travel-cost-via-depot c5 c10) 54)
+        (= (travel-cost-via-depot c5 c11) 43)
+        (= (travel-cost-via-depot c5 c12) 50)
+        (= (travel-cost-via-depot c5 c13) 52)
+        (= (travel-cost-via-depot c5 c14) 51)
+        (= (travel-cost-via-depot c5 c15) 53)
+        (= (travel-cost-via-depot c5 c16) 52)
+        (= (travel-cost-via-depot c5 c17) 32)
+        (= (travel-cost-via-depot c5 c18) 54)
+        (= (travel-cost-via-depot c5 c19) 61)
+        (= (travel-cost-via-depot c5 c20) 66)
+        (= (travel-cost-via-depot c5 c21) 38)
+        (= (travel-cost-via-depot c5 c22) 24)
+        (= (travel-cost-via-depot c5 c23) 48)
+        (= (travel-cost-via-depot c6 c2) 37)
+        (= (travel-cost-via-depot c6 c3) 44)
+        (= (travel-cost-via-depot c6 c4) 56)
+        (= (travel-cost-via-depot c6 c5) 45)
+        (= (travel-cost-via-depot c6 c7) 35)
+        (= (travel-cost-via-depot c6 c8) 45)
+        (= (travel-cost-via-depot c6 c9) 55)
+        (= (travel-cost-via-depot c6 c10) 55)
+        (= (travel-cost-via-depot c6 c11) 44)
+        (= (travel-cost-via-depot c6 c12) 51)
+        (= (travel-cost-via-depot c6 c13) 53)
+        (= (travel-cost-via-depot c6 c14) 52)
+        (= (travel-cost-via-depot c6 c15) 54)
+        (= (travel-cost-via-depot c6 c16) 53)
+        (= (travel-cost-via-depot c6 c17) 33)
+        (= (travel-cost-via-depot c6 c18) 55)
+        (= (travel-cost-via-depot c6 c19) 62)
+        (= (travel-cost-via-depot c6 c20) 67)
+        (= (travel-cost-via-depot c6 c21) 39)
+        (= (travel-cost-via-depot c6 c22) 25)
+        (= (travel-cost-via-depot c6 c23) 49)
+        (= (travel-cost-via-depot c7 c2) 26)
+        (= (travel-cost-via-depot c7 c3) 33)
+        (= (travel-cost-via-depot c7 c4) 45)
+        (= (travel-cost-via-depot c7 c5) 34)
+        (= (travel-cost-via-depot c7 c6) 35)
+        (= (travel-cost-via-depot c7 c8) 34)
+        (= (travel-cost-via-depot c7 c9) 44)
+        (= (travel-cost-via-depot c7 c10) 44)
+        (= (travel-cost-via-depot c7 c11) 33)
+        (= (travel-cost-via-depot c7 c12) 40)
+        (= (travel-cost-via-depot c7 c13) 42)
+        (= (travel-cost-via-depot c7 c14) 41)
+        (= (travel-cost-via-depot c7 c15) 43)
+        (= (travel-cost-via-depot c7 c16) 42)
+        (= (travel-cost-via-depot c7 c17) 22)
+        (= (travel-cost-via-depot c7 c18) 44)
+        (= (travel-cost-via-depot c7 c19) 51)
+        (= (travel-cost-via-depot c7 c20) 56)
+        (= (travel-cost-via-depot c7 c21) 28)
+        (= (travel-cost-via-depot c7 c22) 14)
+        (= (travel-cost-via-depot c7 c23) 38)
+        (= (travel-cost-via-depot c8 c2) 36)
+        (= (travel-cost-via-depot c8 c3) 43)
+        (= (travel-cost-via-depot c8 c4) 55)
+        (= (travel-cost-via-depot c8 c5) 44)
+        (= (travel-cost-via-depot c8 c6) 45)
+        (= (travel-cost-via-depot c8 c7) 34)
+        (= (travel-cost-via-depot c8 c9) 54)
+        (= (travel-cost-via-depot c8 c10) 54)
+        (= (travel-cost-via-depot c8 c11) 43)
+        (= (travel-cost-via-depot c8 c12) 50)
+        (= (travel-cost-via-depot c8 c13) 52)
+        (= (travel-cost-via-depot c8 c14) 51)
+        (= (travel-cost-via-depot c8 c15) 53)
+        (= (travel-cost-via-depot c8 c16) 52)
+        (= (travel-cost-via-depot c8 c17) 32)
+        (= (travel-cost-via-depot c8 c18) 54)
+        (= (travel-cost-via-depot c8 c19) 61)
+        (= (travel-cost-via-depot c8 c20) 66)
+        (= (travel-cost-via-depot c8 c21) 38)
+        (= (travel-cost-via-depot c8 c22) 24)
+        (= (travel-cost-via-depot c8 c23) 48)
+        (= (travel-cost-via-depot c9 c2) 46)
+        (= (travel-cost-via-depot c9 c3) 53)
+        (= (travel-cost-via-depot c9 c4) 65)
+        (= (travel-cost-via-depot c9 c5) 54)
+        (= (travel-cost-via-depot c9 c6) 55)
+        (= (travel-cost-via-depot c9 c7) 44)
+        (= (travel-cost-via-depot c9 c8) 54)
+        (= (travel-cost-via-depot c9 c10) 64)
+        (= (travel-cost-via-depot c9 c11) 53)
+        (= (travel-cost-via-depot c9 c12) 60)
+        (= (travel-cost-via-depot c9 c13) 62)
+        (= (travel-cost-via-depot c9 c14) 61)
+        (= (travel-cost-via-depot c9 c15) 63)
+        (= (travel-cost-via-depot c9 c16) 62)
+        (= (travel-cost-via-depot c9 c17) 42)
+        (= (travel-cost-via-depot c9 c18) 64)
+        (= (travel-cost-via-depot c9 c19) 71)
+        (= (travel-cost-via-depot c9 c20) 76)
+        (= (travel-cost-via-depot c9 c21) 48)
+        (= (travel-cost-via-depot c9 c22) 34)
+        (= (travel-cost-via-depot c9 c23) 58)
+        (= (travel-cost-via-depot c10 c2) 46)
+        (= (travel-cost-via-depot c10 c3) 53)
+        (= (travel-cost-via-depot c10 c4) 65)
+        (= (travel-cost-via-depot c10 c5) 54)
+        (= (travel-cost-via-depot c10 c6) 55)
+        (= (travel-cost-via-depot c10 c7) 44)
+        (= (travel-cost-via-depot c10 c8) 54)
+        (= (travel-cost-via-depot c10 c9) 64)
+        (= (travel-cost-via-depot c10 c11) 53)
+        (= (travel-cost-via-depot c10 c12) 60)
+        (= (travel-cost-via-depot c10 c13) 62)
+        (= (travel-cost-via-depot c10 c14) 61)
+        (= (travel-cost-via-depot c10 c15) 63)
+        (= (travel-cost-via-depot c10 c16) 62)
+        (= (travel-cost-via-depot c10 c17) 42)
+        (= (travel-cost-via-depot c10 c18) 64)
+        (= (travel-cost-via-depot c10 c19) 71)
+        (= (travel-cost-via-depot c10 c20) 76)
+        (= (travel-cost-via-depot c10 c21) 48)
+        (= (travel-cost-via-depot c10 c22) 34)
+        (= (travel-cost-via-depot c10 c23) 58)
+        (= (travel-cost-via-depot c11 c2) 35)
+        (= (travel-cost-via-depot c11 c3) 42)
+        (= (travel-cost-via-depot c11 c4) 54)
+        (= (travel-cost-via-depot c11 c5) 43)
+        (= (travel-cost-via-depot c11 c6) 44)
+        (= (travel-cost-via-depot c11 c7) 33)
+        (= (travel-cost-via-depot c11 c8) 43)
+        (= (travel-cost-via-depot c11 c9) 53)
+        (= (travel-cost-via-depot c11 c10) 53)
+        (= (travel-cost-via-depot c11 c12) 49)
+        (= (travel-cost-via-depot c11 c13) 51)
+        (= (travel-cost-via-depot c11 c14) 50)
+        (= (travel-cost-via-depot c11 c15) 52)
+        (= (travel-cost-via-depot c11 c16) 51)
+        (= (travel-cost-via-depot c11 c17) 31)
+        (= (travel-cost-via-depot c11 c18) 53)
+        (= (travel-cost-via-depot c11 c19) 60)
+        (= (travel-cost-via-depot c11 c20) 65)
+        (= (travel-cost-via-depot c11 c21) 37)
+        (= (travel-cost-via-depot c11 c22) 23)
+        (= (travel-cost-via-depot c11 c23) 47)
+        (= (travel-cost-via-depot c12 c2) 42)
+        (= (travel-cost-via-depot c12 c3) 49)
+        (= (travel-cost-via-depot c12 c4) 61)
+        (= (travel-cost-via-depot c12 c5) 50)
+        (= (travel-cost-via-depot c12 c6) 51)
+        (= (travel-cost-via-depot c12 c7) 40)
+        (= (travel-cost-via-depot c12 c8) 50)
+        (= (travel-cost-via-depot c12 c9) 60)
+        (= (travel-cost-via-depot c12 c10) 60)
+        (= (travel-cost-via-depot c12 c11) 49)
+        (= (travel-cost-via-depot c12 c13) 58)
+        (= (travel-cost-via-depot c12 c14) 57)
+        (= (travel-cost-via-depot c12 c15) 59)
+        (= (travel-cost-via-depot c12 c16) 58)
+        (= (travel-cost-via-depot c12 c17) 38)
+        (= (travel-cost-via-depot c12 c18) 60)
+        (= (travel-cost-via-depot c12 c19) 67)
+        (= (travel-cost-via-depot c12 c20) 72)
+        (= (travel-cost-via-depot c12 c21) 44)
+        (= (travel-cost-via-depot c12 c22) 30)
+        (= (travel-cost-via-depot c12 c23) 54)
+        (= (travel-cost-via-depot c13 c2) 44)
+        (= (travel-cost-via-depot c13 c3) 51)
+        (= (travel-cost-via-depot c13 c4) 63)
+        (= (travel-cost-via-depot c13 c5) 52)
+        (= (travel-cost-via-depot c13 c6) 53)
+        (= (travel-cost-via-depot c13 c7) 42)
+        (= (travel-cost-via-depot c13 c8) 52)
+        (= (travel-cost-via-depot c13 c9) 62)
+        (= (travel-cost-via-depot c13 c10) 62)
+        (= (travel-cost-via-depot c13 c11) 51)
+        (= (travel-cost-via-depot c13 c12) 58)
+        (= (travel-cost-via-depot c13 c14) 59)
+        (= (travel-cost-via-depot c13 c15) 61)
+        (= (travel-cost-via-depot c13 c16) 60)
+        (= (travel-cost-via-depot c13 c17) 40)
+        (= (travel-cost-via-depot c13 c18) 62)
+        (= (travel-cost-via-depot c13 c19) 69)
+        (= (travel-cost-via-depot c13 c20) 74)
+        (= (travel-cost-via-depot c13 c21) 46)
+        (= (travel-cost-via-depot c13 c22) 32)
+        (= (travel-cost-via-depot c13 c23) 56)
+        (= (travel-cost-via-depot c14 c2) 43)
+        (= (travel-cost-via-depot c14 c3) 50)
+        (= (travel-cost-via-depot c14 c4) 62)
+        (= (travel-cost-via-depot c14 c5) 51)
+        (= (travel-cost-via-depot c14 c6) 52)
+        (= (travel-cost-via-depot c14 c7) 41)
+        (= (travel-cost-via-depot c14 c8) 51)
+        (= (travel-cost-via-depot c14 c9) 61)
+        (= (travel-cost-via-depot c14 c10) 61)
+        (= (travel-cost-via-depot c14 c11) 50)
+        (= (travel-cost-via-depot c14 c12) 57)
+        (= (travel-cost-via-depot c14 c13) 59)
+        (= (travel-cost-via-depot c14 c15) 60)
+        (= (travel-cost-via-depot c14 c16) 59)
+        (= (travel-cost-via-depot c14 c17) 39)
+        (= (travel-cost-via-depot c14 c18) 61)
+        (= (travel-cost-via-depot c14 c19) 68)
+        (= (travel-cost-via-depot c14 c20) 73)
+        (= (travel-cost-via-depot c14 c21) 45)
+        (= (travel-cost-via-depot c14 c22) 31)
+        (= (travel-cost-via-depot c14 c23) 55)
+        (= (travel-cost-via-depot c15 c2) 45)
+        (= (travel-cost-via-depot c15 c3) 52)
+        (= (travel-cost-via-depot c15 c4) 64)
+        (= (travel-cost-via-depot c15 c5) 53)
+        (= (travel-cost-via-depot c15 c6) 54)
+        (= (travel-cost-via-depot c15 c7) 43)
+        (= (travel-cost-via-depot c15 c8) 53)
+        (= (travel-cost-via-depot c15 c9) 63)
+        (= (travel-cost-via-depot c15 c10) 63)
+        (= (travel-cost-via-depot c15 c11) 52)
+        (= (travel-cost-via-depot c15 c12) 59)
+        (= (travel-cost-via-depot c15 c13) 61)
+        (= (travel-cost-via-depot c15 c14) 60)
+        (= (travel-cost-via-depot c15 c16) 61)
+        (= (travel-cost-via-depot c15 c17) 41)
+        (= (travel-cost-via-depot c15 c18) 63)
+        (= (travel-cost-via-depot c15 c19) 70)
+        (= (travel-cost-via-depot c15 c20) 75)
+        (= (travel-cost-via-depot c15 c21) 47)
+        (= (travel-cost-via-depot c15 c22) 33)
+        (= (travel-cost-via-depot c15 c23) 57)
+        (= (travel-cost-via-depot c16 c2) 44)
+        (= (travel-cost-via-depot c16 c3) 51)
+        (= (travel-cost-via-depot c16 c4) 63)
+        (= (travel-cost-via-depot c16 c5) 52)
+        (= (travel-cost-via-depot c16 c6) 53)
+        (= (travel-cost-via-depot c16 c7) 42)
+        (= (travel-cost-via-depot c16 c8) 52)
+        (= (travel-cost-via-depot c16 c9) 62)
+        (= (travel-cost-via-depot c16 c10) 62)
+        (= (travel-cost-via-depot c16 c11) 51)
+        (= (travel-cost-via-depot c16 c12) 58)
+        (= (travel-cost-via-depot c16 c13) 60)
+        (= (travel-cost-via-depot c16 c14) 59)
+        (= (travel-cost-via-depot c16 c15) 61)
+        (= (travel-cost-via-depot c16 c17) 40)
+        (= (travel-cost-via-depot c16 c18) 62)
+        (= (travel-cost-via-depot c16 c19) 69)
+        (= (travel-cost-via-depot c16 c20) 74)
+        (= (travel-cost-via-depot c16 c21) 46)
+        (= (travel-cost-via-depot c16 c22) 32)
+        (= (travel-cost-via-depot c16 c23) 56)
+        (= (travel-cost-via-depot c17 c2) 24)
+        (= (travel-cost-via-depot c17 c3) 31)
+        (= (travel-cost-via-depot c17 c4) 43)
+        (= (travel-cost-via-depot c17 c5) 32)
+        (= (travel-cost-via-depot c17 c6) 33)
+        (= (travel-cost-via-depot c17 c7) 22)
+        (= (travel-cost-via-depot c17 c8) 32)
+        (= (travel-cost-via-depot c17 c9) 42)
+        (= (travel-cost-via-depot c17 c10) 42)
+        (= (travel-cost-via-depot c17 c11) 31)
+        (= (travel-cost-via-depot c17 c12) 38)
+        (= (travel-cost-via-depot c17 c13) 40)
+        (= (travel-cost-via-depot c17 c14) 39)
+        (= (travel-cost-via-depot c17 c15) 41)
+        (= (travel-cost-via-depot c17 c16) 40)
+        (= (travel-cost-via-depot c17 c18) 42)
+        (= (travel-cost-via-depot c17 c19) 49)
+        (= (travel-cost-via-depot c17 c20) 54)
+        (= (travel-cost-via-depot c17 c21) 26)
+        (= (travel-cost-via-depot c17 c22) 12)
+        (= (travel-cost-via-depot c17 c23) 36)
+        (= (travel-cost-via-depot c18 c2) 46)
+        (= (travel-cost-via-depot c18 c3) 53)
+        (= (travel-cost-via-depot c18 c4) 65)
+        (= (travel-cost-via-depot c18 c5) 54)
+        (= (travel-cost-via-depot c18 c6) 55)
+        (= (travel-cost-via-depot c18 c7) 44)
+        (= (travel-cost-via-depot c18 c8) 54)
+        (= (travel-cost-via-depot c18 c9) 64)
+        (= (travel-cost-via-depot c18 c10) 64)
+        (= (travel-cost-via-depot c18 c11) 53)
+        (= (travel-cost-via-depot c18 c12) 60)
+        (= (travel-cost-via-depot c18 c13) 62)
+        (= (travel-cost-via-depot c18 c14) 61)
+        (= (travel-cost-via-depot c18 c15) 63)
+        (= (travel-cost-via-depot c18 c16) 62)
+        (= (travel-cost-via-depot c18 c17) 42)
+        (= (travel-cost-via-depot c18 c19) 71)
+        (= (travel-cost-via-depot c18 c20) 76)
+        (= (travel-cost-via-depot c18 c21) 48)
+        (= (travel-cost-via-depot c18 c22) 34)
+        (= (travel-cost-via-depot c18 c23) 58)
+        (= (travel-cost-via-depot c19 c2) 53)
+        (= (travel-cost-via-depot c19 c3) 60)
+        (= (travel-cost-via-depot c19 c4) 72)
+        (= (travel-cost-via-depot c19 c5) 61)
+        (= (travel-cost-via-depot c19 c6) 62)
+        (= (travel-cost-via-depot c19 c7) 51)
+        (= (travel-cost-via-depot c19 c8) 61)
+        (= (travel-cost-via-depot c19 c9) 71)
+        (= (travel-cost-via-depot c19 c10) 71)
+        (= (travel-cost-via-depot c19 c11) 60)
+        (= (travel-cost-via-depot c19 c12) 67)
+        (= (travel-cost-via-depot c19 c13) 69)
+        (= (travel-cost-via-depot c19 c14) 68)
+        (= (travel-cost-via-depot c19 c15) 70)
+        (= (travel-cost-via-depot c19 c16) 69)
+        (= (travel-cost-via-depot c19 c17) 49)
+        (= (travel-cost-via-depot c19 c18) 71)
+        (= (travel-cost-via-depot c19 c20) 83)
+        (= (travel-cost-via-depot c19 c21) 55)
+        (= (travel-cost-via-depot c19 c22) 41)
+        (= (travel-cost-via-depot c19 c23) 65)
+        (= (travel-cost-via-depot c20 c2) 58)
+        (= (travel-cost-via-depot c20 c3) 65)
+        (= (travel-cost-via-depot c20 c4) 77)
+        (= (travel-cost-via-depot c20 c5) 66)
+        (= (travel-cost-via-depot c20 c6) 67)
+        (= (travel-cost-via-depot c20 c7) 56)
+        (= (travel-cost-via-depot c20 c8) 66)
+        (= (travel-cost-via-depot c20 c9) 76)
+        (= (travel-cost-via-depot c20 c10) 76)
+        (= (travel-cost-via-depot c20 c11) 65)
+        (= (travel-cost-via-depot c20 c12) 72)
+        (= (travel-cost-via-depot c20 c13) 74)
+        (= (travel-cost-via-depot c20 c14) 73)
+        (= (travel-cost-via-depot c20 c15) 75)
+        (= (travel-cost-via-depot c20 c16) 74)
+        (= (travel-cost-via-depot c20 c17) 54)
+        (= (travel-cost-via-depot c20 c18) 76)
+        (= (travel-cost-via-depot c20 c19) 83)
+        (= (travel-cost-via-depot c20 c21) 60)
+        (= (travel-cost-via-depot c20 c22) 46)
+        (= (travel-cost-via-depot c20 c23) 70)
+        (= (travel-cost-via-depot c21 c2) 30)
+        (= (travel-cost-via-depot c21 c3) 37)
+        (= (travel-cost-via-depot c21 c4) 49)
+        (= (travel-cost-via-depot c21 c5) 38)
+        (= (travel-cost-via-depot c21 c6) 39)
+        (= (travel-cost-via-depot c21 c7) 28)
+        (= (travel-cost-via-depot c21 c8) 38)
+        (= (travel-cost-via-depot c21 c9) 48)
+        (= (travel-cost-via-depot c21 c10) 48)
+        (= (travel-cost-via-depot c21 c11) 37)
+        (= (travel-cost-via-depot c21 c12) 44)
+        (= (travel-cost-via-depot c21 c13) 46)
+        (= (travel-cost-via-depot c21 c14) 45)
+        (= (travel-cost-via-depot c21 c15) 47)
+        (= (travel-cost-via-depot c21 c16) 46)
+        (= (travel-cost-via-depot c21 c17) 26)
+        (= (travel-cost-via-depot c21 c18) 48)
+        (= (travel-cost-via-depot c21 c19) 55)
+        (= (travel-cost-via-depot c21 c20) 60)
+        (= (travel-cost-via-depot c21 c22) 18)
+        (= (travel-cost-via-depot c21 c23) 42)
+        (= (travel-cost-via-depot c22 c2) 16)
+        (= (travel-cost-via-depot c22 c3) 23)
+        (= (travel-cost-via-depot c22 c4) 35)
+        (= (travel-cost-via-depot c22 c5) 24)
+        (= (travel-cost-via-depot c22 c6) 25)
+        (= (travel-cost-via-depot c22 c7) 14)
+        (= (travel-cost-via-depot c22 c8) 24)
+        (= (travel-cost-via-depot c22 c9) 34)
+        (= (travel-cost-via-depot c22 c10) 34)
+        (= (travel-cost-via-depot c22 c11) 23)
+        (= (travel-cost-via-depot c22 c12) 30)
+        (= (travel-cost-via-depot c22 c13) 32)
+        (= (travel-cost-via-depot c22 c14) 31)
+        (= (travel-cost-via-depot c22 c15) 33)
+        (= (travel-cost-via-depot c22 c16) 32)
+        (= (travel-cost-via-depot c22 c17) 12)
+        (= (travel-cost-via-depot c22 c18) 34)
+        (= (travel-cost-via-depot c22 c19) 41)
+        (= (travel-cost-via-depot c22 c20) 46)
+        (= (travel-cost-via-depot c22 c21) 18)
+        (= (travel-cost-via-depot c22 c23) 28)
+        (= (travel-cost-via-depot c23 c2) 40)
+        (= (travel-cost-via-depot c23 c3) 47)
+        (= (travel-cost-via-depot c23 c4) 59)
+        (= (travel-cost-via-depot c23 c5) 48)
+        (= (travel-cost-via-depot c23 c6) 49)
+        (= (travel-cost-via-depot c23 c7) 38)
+        (= (travel-cost-via-depot c23 c8) 48)
+        (= (travel-cost-via-depot c23 c9) 58)
+        (= (travel-cost-via-depot c23 c10) 58)
+        (= (travel-cost-via-depot c23 c11) 47)
+        (= (travel-cost-via-depot c23 c12) 54)
+        (= (travel-cost-via-depot c23 c13) 56)
+        (= (travel-cost-via-depot c23 c14) 55)
+        (= (travel-cost-via-depot c23 c15) 57)
+        (= (travel-cost-via-depot c23 c16) 56)
+        (= (travel-cost-via-depot c23 c17) 36)
+        (= (travel-cost-via-depot c23 c18) 58)
+        (= (travel-cost-via-depot c23 c19) 65)
+        (= (travel-cost-via-depot c23 c20) 70)
+        (= (travel-cost-via-depot c23 c21) 42)
+        (= (travel-cost-via-depot c23 c22) 28)
+    )
+    (:goal
+         (and
+             (loc d1)
+             (visited c2)
+             (visited c3)
+             (visited c4)
+             (visited c5)
+             (visited c6)
+             (visited c7)
+             (visited c8)
+             (visited c9)
+             (visited c10)
+             (visited c11)
+             (visited c12)
+             (visited c13)
+             (visited c14)
+             (visited c15)
+             (visited c16)
+             (visited c17)
+             (visited c18)
+             (visited c19)
+             (visited c20)
+             (visited c21)
+             (visited c22)
+             (visited c23)
+        )
+    )
+    (:metric minimize total-cost)
+)```
+
+---
+
+# PlanForge Heuristic Environment
+
+You are generating a heuristic for PlanForge, a numeric classical planner.
+
+The heuristic will be used on CVRP instances generated from the same CVRP PDDL domain, but with different numbers of customers, demands, distances, capacities and vehicle limits.
+
+Your generated heuristic must therefore **generalize across instances**.
+
+Do NOT hardcode:
+
+* PlanForge variable IDs
+* customer names such as `c2`, `c7`, etc.
+* number of customers
+* capacity
+* number of vehicles
+* values from the provided example instances
+
+## PlanForge API
+
+These are the symbols that exist. Use whichever your design needs. Do not invent modules, traits, or methods.
+
+The template already starts with this import; keep it:
+
+```rust
+use planforge_sas::numeric_task::{
+    AbstractNumericTask,
+    ExplicitFact,
+    TaskRef,
+    metric_operator_cost_from_initial_values,
+};
+```
+
+`ExplicitFact` and `metric_operator_cost_from_initial_values` live in `planforge_sas::numeric_task`. They are **not** in `planforge_sas::task`, `planforge_sas::state`, or `planforge_search::heuristics`.
+
+### `EvaluationState` (inside `compute_heuristic`)
+
+```rust
+eval_state.task()
+eval_state.state()
+eval_state.state_registry()
+eval_state.is_goal()
+```
+
+Goal states should return `0.0`.
+
+### Reading a state
+
+```rust
+let registry = eval_state.state_registry();
+let state = eval_state.state();
+
+registry.view(state).fill_numeric(&mut numeric_values).map_err(|err| {
+    EvaluationError::ComputationFailed(format!("{err:?}"))
+})?;
+state.fill_state(registry, &mut propositional_values);
+fact.is_hold(registry.view(state))
+```
+
+`fill_numeric` fills a `Vec<f64>` indexed by numeric-variable id and returns `Result`.
+`fill_state` fills a `Vec<usize>` indexed by propositional-variable id. A fact `ExplicitFact::propositional(var_id, value)` holds when `propositional_values[var_id] == value`.
+
+If you need the same numeric IDs on every evaluation, resolve them once in `new()` and store them.
+
+### Task (mainly `new()`)
+
+```rust
+task.variables()                            // Vec<ExplicitVariable>
+task.numeric_variables()                    // Vec<NumericVariable>
+task.get_operators()                        // Vec<Operator>
+task.get_num_goals()
+task.get_goal_fact(i)
+task.goals()
+task.get_fact_name(&fact)                   // &ExplicitFact
+task.get_initial_numeric_state_values()     // &[f64]
+task.get_initial_propositional_state_values()
+```
+
+`ExplicitVariable`: `name()`, `domain_size()` — no `.values()`.
+`NumericVariable`: `name()`, `get_type()` (`Regular` | `Constant` | `Derived` | `Cost`) — no `.id()`. The id is the index:
+
+```rust
+for (id, var) in task.numeric_variables().iter().enumerate() {
+    let _ = var.name();
+}
+```
+
+`Operator`: `name()`, `preconditions()`, `effects()`, `assignment_effects()`, `cost()`.
+Operator metric cost: `metric_operator_cost_from_initial_values(task, op)`.
+
+Facts:
+
+```rust
+let fact = ExplicitFact::propositional(var_id, value);
+let fact_name = task.get_fact_name(&fact);
+for var_id in 0..task.variables().len() {
+    for value in 0..task.variables()[var_id].domain_size() { /* ... */ }
+}
+```
+
+`HeuristicBuildError` is built from `String` (`.to_string().into()`), not from a string slice.
+
+### Numeric names: `load`/`vehicles` are safe, `capacity`/`demand`/`max_vehicles` are not
+
+Propositional `variable.name()` is generic (`var0`, …). Semantics are in `get_fact_name`, e.g. `Atom loc(c10)`, `Atom visited(c7)`. Do not assume value `0` means true.
+
+Numeric names look like `PNE load()`, `PNE vehicles()`, `PNE total-cost()`. `load()` and `vehicles()` are safe to find by exact zero-arity name: operators assign/increase them directly, so the translator always keeps them as their own numeric variable.
+
+`capacity()`, `demand(c7)`, and `max_vehicles()` are different: no operator ever assigns them, they are only *read* inside a compound comparison (e.g. `(load) + (demand ?to) <= (capacity)`). The translator is free to fold that whole comparison into one synthesized `PNE derived!...` expression and drop the original `capacity()` / `demand(c7)` variable if nothing else references it by name. Two consequences:
+
+- Exact-name lookup for `capacity()` / `demand(c7)` / `max_vehicles()` can legitimately find **nothing**. This is expected, not a bug, and MUST NOT fail `new()`.
+- Substring / `contains` / `ends_with` matching against `derived!...` names is **actively unsafe**, not just fragile: a folded name can contain the text `capacity` or `demand(c7)` as a fragment of a larger expression (e.g. "capacity minus this customer's demand"), so matching on it can silently return a plausible-looking but **wrong** number instead of failing loudly.
+
+Treat `capacity`, `demand`, and `max_vehicles` as optional, best-effort signals, not required inputs:
+
+- look them up only with an exact match of the full trimmed name (e.g. `name.trim() == "capacity()"`), never `contains` / `ends_with` / `starts_with`;
+- if the exact name is not found, degrade the resource term of `h` with a permissive default (`f64::MAX` for `capacity`/`max_vehicles`, `0.0` for `demand`) instead of returning `Err` from `new()`;
+- never let the absence of `capacity`/`demand`/`max_vehicles` prevent `h_routing` from being computed — `new()` returning `Ok` with a degraded resource term is always correct; returning `Err` because one of these three was absent by exact name is always wrong.
+
+If you look something up by exact name and it is missing: do not invent an API. Either use another documented source (operators, other Regular/Cost PNEs) or drop that ingredient.
+
+Do not hardcode PlanForge IDs, object names, or numeric values from the example instances.
+
+## Grounded Operators
+
+Grounded operator names preserve useful CVRP semantics.
+
+Observed forms include:
+
+```text
+visit d1 c7
+visit c4 c7
+return-to-depot c7
+visit-via-depot c4 c7
+```
+
+Operators can be inspected using:
+
+```rust
+task.get_operators()
+op.name()
+op.preconditions()
+op.effects()
+op.assignment_effects()
+```
+
+The metric cost of a grounded operator is obtained with (see PlanForge API):
+
+```rust
+metric_operator_cost_from_initial_values(task, op)
+```
+
+This is the **preferred** way to reconstruct routing costs without relying on fragile parsing of derived `travel-cost` variable names.
+
+## Construction VS Evaluation
+
+Your heuristic object may contain:
+
+* precomputed arrays
+* mappings
+* helper structs
+* cached task information
+* reusable scratch buffers
+
+Use `LlmHeuristic::new(task)` for information that depends only on the task.
+
+`compute_heuristic()` may be called hundreds of thousands or millions of times, so it should be relatively cheap.
+
+Do NOT repeatedly:
+
+* scan every task variable by name
+* reconstruct static distance matrices
+* parse the complete task
+* allocate large temporary structures unnecessarily
+
+---
+
+# Hard Design Requirements
+
+These are mandatory. A submission that violates them is invalid even if it compiles.
+
+## MUST
+
+1. Discover `loc` and `visited` facts by scanning semantic fact names via `task.get_fact_name(...)`.
+2. Discover numeric IDs for `load()` and `vehicles()` once in `new()`; never search by name in `compute_heuristic()`.
+3. Extract travel costs primarily from **grounded operators** using `metric_operator_cost_from_initial_values(task, op)` for operators such as `visit ...` and `visit-via-depot ...`.
+4. Implement the heuristic as a **sum of at least two explicit components**, for example:
+   - `h(s) = h_routing(s) + h_capacity(s)` or
+   - `h(s) = h_routing(s) + h_capacity(s) + h_vehicles(s)`
+5. Include a **resource infeasibility check** using best-effort `capacity`/`demand`/`max_vehicles` values (exact-name lookup with a permissive default when absent, per the numeric-names note above): if remaining demand cannot fit in residual vehicle capacity plus remaining fleet capacity, return a large finite penalty.
+6. Reflect the domain distinction between:
+   - direct `visit` while capacity permits
+   - `visit-via-depot` when a new vehicle is needed
+7. Add the **final return-to-depot cost** when customers remain or when all are served but the vehicle is not at the depot.
+8. Use reusable scratch buffers for repeated evaluation when inspecting many customers or numeric values.
+9. Preserve the PlanForge `Heuristic` implementation, builder interface, external registration mechanism, and heuristic name `llm_001`.
+
+## MUST NOT
+
+1. Use only unvisited-customer count, goal count, or a constant non-zero value as the main heuristic.
+2. Use PNE substring parsing as the **only** source of travel costs.
+3. Assume distance symmetry unless verified from extracted operator costs.
+4. Hardcode PlanForge IDs, object names, customer counts, capacities, or fleet sizes from the examples.
+5. Rebuild the full distance matrix or re-scan the entire task on every `compute_heuristic()` call.
+6. Sort large node lists from scratch on every evaluation.
+7. Return `Err` from `new()` because `capacity()`, `demand(...)`, or `max_vehicles()` was not found by exact name, or because a `contains`/`ends_with`/`starts_with` match against those names was used and failed — their absence is expected and MUST degrade the resource term, not abort construction.
+
+---
+
+# Distance Extraction Protocol
+
+Follow this order during `LlmHeuristic::new(task)`:
+
+**Phase A — Primary (required):**
+
+- Scan grounded operators.
+- Parse operator names of the forms `visit <from> <to>` and `visit-via-depot <from> <to>`.
+- Store arc costs using `metric_operator_cost_from_initial_values(task, op)`.
+
+**Phase B — Fallback (optional):**
+
+- If some arcs remain missing, attempt to recover costs from numeric variable names containing `travel-cost(`.
+
+**Phase C — Last resort:**
+
+- Fill only still-missing arcs conservatively (for example via depot if both legs are known).
+- If the resulting distance matrix is unusable, fail construction with a clear `HeuristicBuildError` message instead of silently using arbitrary constants everywhere.
+
+---
+
+# Technique Catalog
+
+Your design must incorporate **at least two** of the following techniques:
+
+1. **Geometric routing estimate** over unvisited customers (for example: minimum spanning tree, sum of minimum depot connections, or a capacitated greedy completion).
+2. **Capacity/resource lower bound** using remaining demand, current load, capacity, and remaining vehicles.
+3. **Operator-based travel cost reconstruction** from grounded actions.
+4. **Dead-end detection** for resource-infeasible states.
+5. **Precomputed nearest-neighbor or sorted adjacency lists** for fast evaluation.
+
+Do not rely on a single nearest-neighbor loop as the entire design.
+
+---
+
+# Performance Budget
+
+Target complexity per `compute_heuristic()` call:
+
+- **O(n log n)** or better, where n is the number of customers.
+- Acceptable: one pass over customers, lookups in precomputed arrays, small greedy simulation with pre-sorted neighbor lists.
+- Unacceptable: full matrix rebuild, full task rescan, or sorting all nodes from scratch on every call.
+
+Prefer:
+
+```rust
+// precomputed once in new()
+nearest_from: Vec<Vec<usize>>
+scratch_numeric: RefCell<Vec<f64>>
+scratch_flags: RefCell<Vec<bool>>
+```
+
+---
+
+# Edge Cases Your Code Must Handle
+
+1. Goal state → return `0.0`.
+2. All customers visited but not at depot → return travel cost to depot only.
+3. At depot with zero load and pending customers → start a route by direct visit.
+4. At customer, next customer does not fit in current load → via-depot transition if vehicles remain.
+5. Remaining total demand exceeds available fleet capacity → large finite penalty.
+6. No feasible move remains under resource limits → large finite penalty, not panic and not `0.0`.
+
+---
+
+# Anti-Patterns
+
+```text
+BAD — invalid or weak designs:
+- h = number of unvisited customers
+- h = 0.0 for all non-goal states
+- h = task.get_num_goals() or similar goal-count proxy
+- travel costs extracted only from PNE substrings, with no operator fallback
+- symmetric distance matrix assumed without checking
+- no handling of load / vehicles / capacity at all
+
+GOOD — expected designs:
+- h combines routing cost estimate + capacity/vehicle penalties
+- travel costs extracted from grounded visit / visit-via-depot operators
+- current location, load, vehicles, and unvisited set all affect h(s)
+- static task information precomputed in new(); cheap state evaluation
+- explicit handling of direct visit vs via-depot route change
+```
+
+---
+
+# Reference Design Pattern
+
+The following is **not** code to copy verbatim. It shows the expected structure and reasoning style for a strong CVRP heuristic in PlanForge.
+
+```rust
+// CONSTRUCTION (once):
+// 1. Scan propositional facts -> map customers to visited/loc ExplicitFact
+// 2. Identify depot structurally (has loc, not a visited customer)
+// 3. Discover load_id and vehicles_id from simple zero-ary PNE names
+// 4. Extract arc costs from grounded operators via metric_operator_cost_from_initial_values
+// 5. Precompute distance matrix, nearest-neighbor lists, demands, capacity, max_vehicles
+
+// EVALUATION (many times):
+// 1. if goal -> 0.0
+// 2. read current location, unvisited customers, load, vehicles
+// 3. if resource-infeasible -> LARGE_PENALTY
+// 4. h_routing = simulate capacitated completion OR geometric lower bound over unvisited
+// 5. h_capacity = penalty if remaining demand exceeds available capacity
+// 6. return h_routing + h_capacity (+ optional vehicle penalty)
+```
+
+Think step-by-step like a domain-dependent planning heuristic designer:
+
+1. What static structure can be extracted once from the task?
+2. Which state features distinguish CVRP search states in this domain?
+3. What cheap estimate of remaining **metric routing cost** captures those features?
+4. How can operator semantics (`visit` vs `visit-via-depot`) be reflected in the estimate?
+
+---
+
+# Evaluation Rubric
+
+Assume your heuristic will be judged on:
+
+1. **Generalization** — no hardcoded IDs, names, or instance-specific constants.
+2. **Informativeness** — different states with different location/load/vehicles/unvisited sets receive different values.
+3. **Efficiency** — cheap per-state evaluation with precomputation in `new()`.
+4. **Robustness** — operator-based cost extraction with fallback strategy.
+5. **Domain alignment** — models capacity, fleet limit, direct visits, via-depot transitions, and final return.
+6. **Interpretability** — `what`, `why`, and `design` accurately describe the code.
+
+In `why`, explain why your heuristic should be more informative than:
+
+- (a) unvisited-customer count
+- (b) sum of minimum depot distances for unvisited customers
+- (c) a purely geometric estimate that ignores capacity and vehicle limits
+
+---
+
+# Minimum Ambition Level
+
+A trivial or nearly constant heuristic is unacceptable.
+
+The implementation must contain substantial non-boilerplate logic in `new()` and `compute_heuristic()`.
+
+Returning `h = remaining_customers`, `h = 0.0`, or a single unmodified counter for all non-goal states is invalid.
+
+---
+
+# Template (IMPORTANT)
+
+Based on the instructions and provided domain information, generate valid code starting from this template:
+
+```rust
+use planforge_sas::numeric_task::{
+    AbstractNumericTask,
+    ExplicitFact,
+    TaskRef,
+    metric_operator_cost_from_initial_values,
+};
+
+use planforge_search::config::HeuristicSpec;
+
+use planforge_search::evaluation::{
+    EvaluationError,
+    EvaluationState,
+    Heuristic,
+};
+
+use planforge_search::heuristic_factory::{
+    ExternalHeuristic,
+    HeuristicBuildError,
+    RequiredBackend,
+    TaskRequirements,
+};
+
+
+// ============================================================================
+// LLM-GENERATED HEURISTIC
+// ============================================================================
+
+struct LlmHeuristic {
+    // The LLM may add fields here if needed.
+}
+
+impl LlmHeuristic {
+    fn new(
+        _task: &dyn AbstractNumericTask,
+    ) -> Result<Self, HeuristicBuildError> {
+        // The LLM may inspect the task and precompute static information here.
+
+        Ok(Self {
+            // fields...
+        })
+    }
+}
+
+
+impl Heuristic for LlmHeuristic {
+    fn compute_heuristic(
+        &self,
+        eval_state: &EvaluationState<'_, '_>,
+    ) -> Result<f64, EvaluationError> {
+
+        if eval_state.is_goal() {
+            return Ok(0.0);
+        }
+
+        let task = eval_state.task();
+        let registry = eval_state.state_registry();
+        let state = eval_state.state();
+
+        // ================================================================
+        // LLM: IMPLEMENT THE HEURISTIC HERE
+        //
+        // You may:
+        // - inspect the current state
+        // - use task information
+        // - use fields precomputed in LlmHeuristic::new()
+        // - add helper methods / structs if useful
+        //
+        // Return a non-negative f64 heuristic value.
+        // ================================================================
+
+        let h = 0.0;
+
+        Ok(h)
+    }
+
+    fn heuristic_name(&self) -> &str {
+        "llm_001"
+    }
+}
+
+
+// ============================================================================
+// PLANFORGE REGISTRATION
+// ============================================================================
+
+fn any_task(_: &HeuristicSpec) -> Result<TaskRequirements, String> {
+    Ok(TaskRequirements::ANY)
+}
+
+fn no_nested_heuristics(
+    _: &HeuristicSpec,
+) -> Result<Vec<HeuristicSpec>, String> {
+    Ok(Vec::new())
+}
+
+
+fn build_llm_001<'a>(
+    spec: &HeuristicSpec,
+    task: &'a dyn AbstractNumericTask,
+    _: TaskRef<'a>,
+) -> Result<Option<Box<dyn Heuristic + 'a>>, HeuristicBuildError> {
+
+    if !spec.args.is_empty() {
+        return Err(
+            "`llm_001` does not accept arguments"
+                .to_string()
+                .into()
+        );
+    }
+
+    let heuristic = LlmHeuristic::new(task)?;
+
+    Ok(Some(Box::new(heuristic)))
+}
+
+
+fn main() -> std::io::Result<()> {
+    planforge::run_with_heuristics(vec![
+        ExternalHeuristic {
+            name: "llm_001",
+            backend: RequiredBackend::None,
+            requirements: any_task,
+            nested_heuristics: no_nested_heuristics,
+            build: build_llm_001,
+        }
+    ])
+}
+```
+
+## Heuristic Name
+
+The template contains the heuristic name:
+
+```rust
+name: "llm_001"
+```
+
+Keep this exact name unchanged in the generated code.
+
+---
+
+# Output Format
+
+Return a JSON object with exactly the following fields:
+
+- `code`: the COMPLETE Rust source file implementing the heuristic.
+- `what`: a concise technical explanation of WHAT the generated heuristic does, including the information it uses, any task-dependent precomputation, and how the heuristic value is computed from a state.
+- `why`: a concise explanation of WHY you selected this heuristic design, including which structural properties of the CVRP and which patterns observed in the representative client instances motivated the design.
+- `design`: a short list of the techniques used from the Technique Catalog.
+- `complexity`: declared asymptotic cost of `compute_heuristic()` per state.
+- `fallbacks`: how the code behaves when operator extraction or PNE fallback is incomplete.
+- `known_limitations`: 2–3 honest weaknesses of the design.
+
+The `what`, `why`, `design`, and `known_limitations` fields are for later interpretability analysis and must accurately describe the generated code.
+
+Return only the JSON object and no additional text.
+
+---
+
+# Final Checklist
+
+Before returning the JSON, verify:
+
+1. Goal states return `0.0`.
+2. Non-goal states return a finite value for solvable states, and a large finite penalty for detected resource dead-ends.
+3. All imports are present and the code compiles against the template interface.
+4. Static / task-dependent information is extracted in `new()`, not recomputed on every evaluation.
+5. Travel costs are extracted primarily from grounded operators.
+6. At least two Technique Catalog items are implemented.
+7. The heuristic distinguishes location, load, vehicles, and unvisited customers.
+8. Direct visit vs via-depot semantics are reflected in the estimate.
+9. No customer names, numeric IDs, or instance sizes are hardcoded.
+10. `what` and `why` match the code exactly.

@@ -1,0 +1,17 @@
+{
+  "what": "The heuristic precomputes semantic loc/visited mappings, directed direct and via-depot routing costs, customer demands, capacity, fleet size, and task-derived route summaries. At evaluation it reads reusable numeric and propositional buffers, identifies the current location and unvisited customers, checks fleet-capacity feasibility, and returns h_routing + h_capacity + h_vehicles. The routing term contains the cheapest legal first transition, a directed geometric continuation estimate, and an explicit final return to the depot. The capacity term estimates the extra cost of required depot reloads, while the fleet term distinguishes states with different remaining vehicle slack.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with tens of heterogeneous-demand customers, a small vehicle fleet, and an explicit metric travel-cost matrix. Their action structure makes direct visits fundamentally different from depot reloads, so the heuristic evaluates direct and visit-via-depot transitions separately and uses load and vehicles to estimate required route breaks. It is more informative than unvisited count because it uses directed routing costs and the current location; more informative than a sum of depot distances because it models customer-to-customer continuations; and more robust than a purely geometric estimate because it detects insufficient residual fleet capacity and prices required vehicle changes.",
+  "design": [
+    "Geometric directed routing estimate over unvisited customers",
+    "Capacity/resource lower bound using remaining demand, load, capacity, and fleet state",
+    "Operator-based travel-cost reconstruction from visit, visit-via-depot, and return operators",
+    "Dead-end detection for resource-infeasible states"
+  ],
+  "complexity": "O(n) time per state and O(n) reusable scratch space, where n is the number of customers.",
+  "fallbacks": "Grounded operators are the primary cost source. Missing direct arcs are next recovered from simple travel-cost PNE names. Missing via-depot arcs are derived from known directed customer-to-depot and depot-to-customer legs. As a last resort, a missing direct customer arc may use its known via-depot cost. No symmetry is assumed. Construction fails with a clear HeuristicBuildError if depot legs, customer transitions, demands, capacity, or fleet limits remain unusable.",
+  "known_limitations": [
+    "The geometric backbone uses static cheapest outgoing arcs, which may point to already visited customers and can underestimate the structure of the remaining subproblem.",
+    "The route-break premium is a global minimum and does not solve an explicit demand-packing or route-partitioning problem.",
+    "Fallback recovery of demands from compiled load-plus-demand expression values relies on the target family's usual zero initial load when simple demand PNEs are unavailable."
+  ]
+}

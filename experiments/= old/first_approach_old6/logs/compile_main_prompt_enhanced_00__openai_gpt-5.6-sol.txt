@@ -1,0 +1,34 @@
+   Compiling planforge-llm-cvrp v0.1.0 (/mnt/c/Code/GitHub/TFM/mulcia-tfm-PlanForge/experiments/llm-cvrp-runner)
+error[E0283]: type annotations needed
+   --> experiments/llm-cvrp-runner/src/main.rs:110:18
+    |
+110 |                 .into()
+    |                  ^^^^
+    |
+    = note: the type must implement `From<String>`
+    = note: required for `String` to implement `Into<_>`
+help: try using a fully qualified path to specify the expected types
+    |
+108 ~             <String as Into<T>>::into("llm_001 could not identify the depot from the loc goal"
+109 ~                 .to_string())
+    |
+
+error[E0283]: type annotations needed
+   --> experiments/llm-cvrp-runner/src/main.rs:110:18
+    |
+110 |                 .into()
+    |                  ^^^^
+111 |         })?;
+    |           - type must be known at this point
+    |
+    = note: multiple `impl`s satisfying `HeuristicBuildError: From<_>` found in the following crates: `core`, `planforge_search`:
+            - impl From<String> for HeuristicBuildError;
+            - impl<T> From<T> for T;
+help: try using a fully qualified path to specify the expected types
+    |
+108 ~             <String as Into<T>>::into("llm_001 could not identify the depot from the loc goal"
+109 ~                 .to_string())
+    |
+
+For more information about this error, try `rustc --explain E0283`.
+error: could not compile `planforge-llm-cvrp` (bin "planforge-llm-cvrp") due to 2 previous errors

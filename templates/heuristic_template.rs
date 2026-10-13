@@ -1,4 +1,9 @@
-use planforge_sas::numeric_task::{AbstractNumericTask, TaskRef};
+use planforge_sas::numeric_task::{
+    AbstractNumericTask,
+    ExplicitFact,
+    TaskRef,
+    metric_operator_cost_from_initial_values,
+};
 
 use planforge_search::config::HeuristicSpec;
 

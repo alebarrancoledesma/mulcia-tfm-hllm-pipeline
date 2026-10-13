@@ -1,0 +1,11 @@
+{
+  "family": "E",
+  "split": "dev",
+  "description": "Eval/ranking E. n13 y n22 (también en prompt) para que GBFS acabe; n23-k3 no vista. n30 (hard del prompt) cubre la 4ª plaza: solo hay 6 E pequeñas y test se queda n31+n33. Sin n51+.",
+  "instances": [
+    "E-n13-k4",
+    "E-n22-k4",
+    "E-n23-k3",
+    "E-n30-k3"
+  ]
+}

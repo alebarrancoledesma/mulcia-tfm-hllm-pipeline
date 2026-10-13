@@ -1,0 +1,32 @@
+   Compiling planforge-llm-cvrp v0.1.0 (/mnt/c/Code/GitHub/TFM/mulcia-tfm-PlanForge/experiments/llm-cvrp-runner)
+warning: value assigned to `best_cost` is never read
+   --> experiments/llm-cvrp-runner/src/main.rs:529:17
+    |
+500 |                         best_cost = cost;
+    |                         ---------------- `best_cost` is overwritten here before the previous value is read
+...
+529 |                 best_cost = self.fallback_edge;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this value is reassigned later and never used
+    |
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+error[E0499]: cannot borrow `scratch` as mutable more than once at a time
+   --> experiments/llm-cvrp-runner/src/main.rs:615:69
+    |
+615 |         self.append_nearest_order(cur, &mut scratch.remaining, &mut scratch.order);
+    |              --------------------           -------                 ^^^^^^^ second mutable borrow occurs here
+    |              |                              |
+    |              |                              first mutable borrow occurs here
+    |              first borrow later used by call
+
+warning: unused variable: `task`
+   --> experiments/llm-cvrp-runner/src/main.rs:569:13
+    |
+569 |         let task = eval_state.task();
+    |             ^^^^ help: if this is intentional, prefix it with an underscore: `_task`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+For more information about this error, try `rustc --explain E0499`.
+warning: `planforge-llm-cvrp` (bin "planforge-llm-cvrp") generated 2 warnings
+error: could not compile `planforge-llm-cvrp` (bin "planforge-llm-cvrp") due to 1 previous error; 2 warnings emitted

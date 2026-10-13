@@ -1,0 +1,18 @@
+{
+  "what": "The heuristic reconstructs CVRP structure from fact names and grounded operators. In new(), it scans propositional facts to find `loc` and `visited` fact IDs for all places/customers, identifies the depot, locates numeric IDs for `load` and `vehicles`, and optionally reads `capacity`, `max_vehicles`, and customer demands. It builds directed cost matrices primarily from grounded `visit`, `visit-via-depot`, and `return-to-depot` operators, with numeric-variable fallbacks for missing travel-cost arcs, then precomputes sorted nearest-neighbor lists for direct and via-depot moves. At evaluation time, it reads the current location, load, vehicles, and unvisited set; checks resource infeasibility; runs a greedy nearest-neighbor route completion that chooses between direct visits and visit-via-depot transitions; adds the final return-to-depot cost; and returns a weighted sum of routing cost, capacity-pressure penalty, and fleet-slack penalty.",
+  "why": "The representative instances are small CVRPs with a single depot, capacitated vehicles, a small fleet, explicit travel-cost matrices, and clear state dimensions: current location, visited/unvisited customers, load, and vehicles used. Operator-based cost extraction is more robust than relying only on PNE name parsing. The greedy completion explicitly models the key domain distinction between continuing a route with `visit` and starting a new route with `visit-via-depot`, including load reset and fleet consumption. Sorted nearest lists make repeated evaluation cheap while still being much more informative than unvisited-customer count or simple sum-of-depot-distances, because it accounts for routing order, capacity, fleet limits, and final return.",
+  "design": [
+    "Operator-based travel cost reconstruction from grounded actions",
+    "Precomputed nearest-neighbor/sorted adjacency lists",
+    "Greedy geographic routing estimate over unvisited customers",
+    "Capacity/resource lower bound and dead-end detection",
+    "Explicit direct-visit vs visit-via-depot semantics"
+  ],
+  "complexity": "Construction inspects all grounded operators and all numeric/propositional variables once. Evaluation is normally O(n * average nearest-list scan length), worst-case O(n^2) for tens of customers; no large per-state allocations or full matrix rebuilds are performed.",
+  "fallbacks": "Travel costs are first extracted from grounded operators. Missing costs are then recovered from numeric variable names containing `travel-cost(` or `travel-cost-via-depot(`. Missing direct arcs are filled as `from -> depot + depot -> to`. Demand, capacity, and max_vehicles are parsed from numeric names; if capacity or max_vehicles are not found they default to `f64::MAX`, and missing demands default to 0, which weakens resource checks without crashing construction.",
+  "known_limitations": [
+    "Greedy nearest-neighbor route completion is myopic and may under- or overestimate multi-route CVRP solutions compared with optimal route interleaving.",
+    "Resource infeasibility detection depends on discovering demand/capacity/max_vehicles by name; if those are absent, the dead-end penalty may not fire.",
+    "Nearest-list scans can degrade to O(n^2) in the worst case, though the target instances have only tens of customers."
+  ]
+}

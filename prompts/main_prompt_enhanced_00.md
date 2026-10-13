@@ -27,9 +27,24 @@ Do NOT hardcode:
 * number of vehicles
 * values from the provided example instances
 
-## Available State API
+## PlanForge API
 
-Inside `compute_heuristic()`, `EvaluationState` provides:
+These are the symbols that exist. Use whichever your design needs. Do not invent modules, traits, or methods.
+
+The template already starts with this import; keep it:
+
+```rust
+use planforge_sas::numeric_task::{
+    AbstractNumericTask,
+    ExplicitFact,
+    TaskRef,
+    metric_operator_cost_from_initial_values,
+};
+```
+
+`ExplicitFact` and `metric_operator_cost_from_initial_values` live in `planforge_sas::numeric_task`. They are **not** in `planforge_sas::task`, `planforge_sas::state`, or `planforge_search::heuristics`.
+
+### `EvaluationState` (inside `compute_heuristic`)
 
 ```rust
 eval_state.task()
@@ -38,231 +53,92 @@ eval_state.state_registry()
 eval_state.is_goal()
 ```
 
-Goal states should return:
+Goal states should return `0.0`.
 
-```rust
-0.0
-```
-
-## Numeric State Access
-
-The full numeric state can be read efficiently with:
+### Reading a state
 
 ```rust
 let registry = eval_state.state_registry();
 let state = eval_state.state();
 
-registry
-    .view(state)
-    .fill_numeric(&mut numeric_values)
-    .map_err(|err| {
-        EvaluationError::ComputationFailed(format!(
-            "LLM heuristic failed to read numeric state: {err:?}"
-        ))
-    })?;
-```
-
-The returned vector corresponds to PlanForge numeric-variable IDs.
-
-If your heuristic needs numeric variables frequently, discover their IDs ONCE in the constructor and store those IDs in the heuristic struct.
-
-Do NOT search numeric-variable metadata on every heuristic evaluation.
-
-The initial values of all numeric variables are available through:
-
-```rust
-task.get_initial_numeric_state_values()
-```
-
-The numeric variable collection is available through:
-
-```rust
-task.numeric_variables()
-```
-
-Numeric variable types can be inspected with:
-
-```rust
-numeric_var.get_type()
-```
-
-In particular, the inspected CVRP task contained dynamic variables corresponding to:
-
-```text
-PNE vehicles()    type=Regular
-PNE load()        type=Regular
-PNE total-cost()  type=Cost
-```
-
-Their numeric IDs are task dependent and MUST NOT be hardcoded.
-
-Do NOT invent undocumented PlanForge methods in order to obtain numeric-variable information.
-
-If some desired CVRP feature cannot be extracted using APIs explicitly provided in this prompt, the template, or the structural operator information described below, prefer a heuristic design that does not require that feature rather than guessing an API.
-
-## Propositional State Access
-
-The complete propositional state can be read efficiently with:
-
-```rust
+registry.view(state).fill_numeric(&mut numeric_values).map_err(|err| {
+    EvaluationError::ComputationFailed(format!("{err:?}"))
+})?;
 state.fill_state(registry, &mut propositional_values);
-```
-
-The returned vector contains the current value of each propositional variable.
-
-Alternatively, an individual fact can be tested with:
-
-```rust
 fact.is_hold(registry.view(state))
 ```
 
-For heuristics that inspect many customers, prefer reading the complete propositional state once.
+`fill_numeric` fills a `Vec<f64>` indexed by numeric-variable id and returns `Result`.
+`fill_state` fills a `Vec<usize>` indexed by propositional-variable id. A fact `ExplicitFact::propositional(var_id, value)` holds when `propositional_values[var_id] == value`.
 
-## Task Introspection
+If you need the same numeric IDs on every evaluation, resolve them once in `new()` and store them.
 
-The task exposes information including:
+### Task (mainly `new()`)
 
 ```rust
-task.variables()
-task.numeric_variables()
-task.get_operators()
+task.variables()                            // Vec<ExplicitVariable>
+task.numeric_variables()                    // Vec<NumericVariable>
+task.get_operators()                        // Vec<Operator>
 task.get_num_goals()
 task.get_goal_fact(i)
-task.get_fact_name(...)
-task.get_initial_numeric_state_values()
+task.goals()
+task.get_fact_name(&fact)                   // &ExplicitFact
+task.get_initial_numeric_state_values()     // &[f64]
+task.get_initial_propositional_state_values()
 ```
 
-A propositional fact can be constructed using:
+`ExplicitVariable`: `name()`, `domain_size()` — no `.values()`.
+`NumericVariable`: `name()`, `get_type()` (`Regular` | `Constant` | `Derived` | `Cost`) — no `.id()`. The id is the index:
 
 ```rust
-ExplicitFact::propositional(var_id, value)
+for (id, var) in task.numeric_variables().iter().enumerate() {
+    let _ = var.name();
+}
 ```
 
-Semantic fact names can be obtained using:
+`Operator`: `name()`, `preconditions()`, `effects()`, `assignment_effects()`, `cost()`.
+Operator metric cost: `metric_operator_cost_from_initial_values(task, op)`.
+
+Facts:
 
 ```rust
 let fact = ExplicitFact::propositional(var_id, value);
 let fact_name = task.get_fact_name(&fact);
-```
-
-A safe way to inspect all propositional facts during construction is:
-
-```rust
 for var_id in 0..task.variables().len() {
-    for value in 0..task.variables()[var_id].domain_size() {
-        let fact = ExplicitFact::propositional(var_id, value);
-        let fact_name = task.get_fact_name(&fact);
-
-        // inspect fact_name
-    }
+    for value in 0..task.variables()[var_id].domain_size() { /* ... */ }
 }
 ```
 
-Perform this kind of semantic discovery only during heuristic construction, not during every state evaluation.
-
-## IMPORTANT Observations from the CVRP Domain
-
-PlanForge propositional variable names themselves are generic:
-
-```text
-var0
-var1
-var18
-...
-```
-
-Do NOT use `variable.name()` to identify CVRP propositions.
-
-Semantic fact names ARE preserved through:
+`HeuristicBuildError` comes from a `String`, not a `&str`. In closures rustc often cannot infer `.to_string().into()` — use an explicit constructor or annotate the return type:
 
 ```rust
-task.get_fact_name(&ExplicitFact::propositional(var_id, value))
+return Err(HeuristicBuildError::from("missing depot loc fact".to_string()));
+// or:
+.ok_or_else(|| -> HeuristicBuildError { "missing depot loc fact".to_string().into() })?;
 ```
 
-Observed examples:
+Heuristic values are `f64`. Write `let mut x: f64 = 0.0` (or `0.0_f64`) before `.max` / `.min`; a bare `0.0` is an ambiguous `{float}` and does not compile.
 
-```text
-Atom loc(c10)
-NegatedAtom loc(c10)
+### Numeric names: `load`/`vehicles` are safe, `capacity`/`demand`/`max_vehicles` are not
 
-Atom visited(c7)
-NegatedAtom visited(c7)
-```
+Propositional `variable.name()` is generic (`var0`, …). Semantics are in `get_fact_name`, e.g. `Atom loc(c10)`, `Atom visited(c7)`. Do not assume value `0` means true.
 
-Therefore location and visited mappings can be discovered during heuristic construction by scanning fact names.
+Numeric names look like `PNE load()`, `PNE vehicles()`, `PNE total-cost()`. `load()` and `vehicles()` are safe to find by exact zero-arity name: operators assign/increase them directly, so the translator always keeps them as their own numeric variable.
 
-When identifying a positive fact such as:
+`capacity()`, `demand(c7)`, and `max_vehicles()` are different: no operator ever assigns them, they are only *read* inside a compound comparison (e.g. `(load) + (demand ?to) <= (capacity)`). The translator is free to fold that whole comparison into one synthesized `PNE derived!...` expression and drop the original `capacity()` / `demand(c7)` variable if nothing else references it by name. Two consequences:
 
-```text
-Atom visited(c7)
-```
+- Exact-name lookup for `capacity()` / `demand(c7)` / `max_vehicles()` can legitimately find **nothing**. This is expected, not a bug, and MUST NOT fail `new()`.
+- Substring / `contains` / `ends_with` matching against `derived!...` names is **actively unsafe**, not just fragile: a folded name can contain the text `capacity` or `demand(c7)` as a fragment of a larger expression (e.g. "capacity minus this customer's demand"), so matching on it can silently return a plausible-looking but **wrong** number instead of failing loudly.
 
-store BOTH:
+Treat `capacity`, `demand`, and `max_vehicles` as optional, best-effort signals, not required inputs:
 
-```text
-var_id
-positive_value
-```
+- look them up only with an exact match of the full trimmed name (e.g. `name.trim() == "capacity()"`), never `contains` / `ends_with` / `starts_with`;
+- if the exact name is not found, degrade the resource term of `h` with a permissive default (`f64::MAX` for `capacity`/`max_vehicles`, `0.0` for `demand`) instead of returning `Err` from `new()`;
+- never let the absence of `capacity`/`demand`/`max_vehicles` prevent `h_routing` from being computed — `new()` returning `Ok` with a degraded resource term is always correct; returning `Err` because one of these three was absent by exact name is always wrong.
 
-Do NOT assume that propositional value `0` always means true or that value `1` always means false.
+If you look something up by exact name and it is missing: do not invent an API. Either use another documented source (operators, other Regular/Cost PNEs) or drop that ingredient.
 
-For example, a reusable mapping may conceptually contain:
-
-```rust
-struct PropFactRef {
-    var_id: usize,
-    positive_value: usize,
-}
-```
-
-Then, after using `fill_state()`, a positive fact holds when:
-
-```rust
-propositional_values[fact_ref.var_id] == fact_ref.positive_value
-```
-
-## Numeric Variables
-
-In the inspected CVRP instance, the dynamic variables were exposed cleanly as:
-
-```text
-PNE vehicles()    type=Regular
-PNE load()        type=Regular
-PNE total-cost()  type=Cost
-```
-
-Their numeric IDs are instance/task dependent and MUST NOT be hardcoded.
-
-Many other numeric expressions, especially those involving:
-
-```text
-demand
-capacity
-travel-cost
-max-vehicles
-```
-
-may be compiled by PlanForge into complex derived PNE expressions.
-
-Do NOT assume they will appear as simple strings such as:
-
-```text
-demand(c7)
-capacity()
-travel-cost(c4,c7)
-```
-
-Translator-generated numeric names may contain complex derived expressions.
-
-Do NOT build the heuristic around parsing arbitrary strings such as:
-
-```text
-PNE derived!...
-```
-
-Prefer structural task/operator information whenever possible.
-
-If demands, capacity or maximum vehicle count cannot be extracted robustly using the documented API, they are OPTIONAL features. Do not implement fragile parsing merely to obtain them.
+Do not hardcode PlanForge IDs, object names, or numeric values from the example instances.
 
 ## Grounded Operators
 
@@ -287,13 +163,13 @@ op.effects()
 op.assignment_effects()
 ```
 
-The metric cost of a grounded operator can be obtained with:
+The metric cost of a grounded operator is obtained with (see PlanForge API):
 
 ```rust
 metric_operator_cost_from_initial_values(task, op)
 ```
 
-This is the preferred way to reconstruct routing costs without parsing translator-generated `travel-cost` variables.
+This is the **preferred** way to reconstruct routing costs without relying on fragile parsing of derived `travel-cost` variable names.
 
 For example, under this CVRP domain:
 
@@ -455,7 +331,7 @@ Guard numerical operations such as division and operations on empty collections.
 
 Do NOT use `unwrap()` or `expect()` on task-dependent or state-dependent data unless the condition has been explicitly guaranteed during construction.
 
-If required static information cannot be discovered reliably during `LlmHeuristic::new(task)`, return a descriptive `HeuristicBuildError` rather than panicking.
+If information that *your* design truly needs cannot be discovered reliably during `LlmHeuristic::new(task)`, return a descriptive `HeuristicBuildError` rather than panicking. A missing exact fluent name (`capacity()`, `demand(...)`, …) is not by itself a reason to fail construction — see PlanForge API.
 
 For this experiment, do NOT declare a state to be a dead end unless impossibility is logically certain.
 

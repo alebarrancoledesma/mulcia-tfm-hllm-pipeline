@@ -1,0 +1,18 @@
+{
+  "what": "The heuristic precomputes semantic loc/visited fact mappings, exact load and vehicles IDs, optional exact capacity/demand/max-vehicles values, directed travel matrices reconstructed primarily from grounded operators, and sorted directed adjacency lists. At evaluation it reads the current location, pending customers, load, and fleet usage; detects resource dead ends; and returns h_routing + h_capacity + h_vehicles. The routing term combines the cheapest applicable first transition (direct visit or visit-via-depot), a directed one-out relaxation over pending customers, and an explicit final depot return. The resource terms estimate unavoidable depot route boundaries and fleet pressure.",
+  "why": "The representative instances are fleet-limited capacitated routing problems with heterogeneous demands, explicit pairwise metric costs, multiple depot reloads, and a mandatory final depot return. This motivates reconstructing directed costs from grounded visit, visit-via-depot, and return operators and explicitly distinguishing a direct visit that fits the current load from a depot reload requiring another vehicle. The result is more informative than customer count because it uses actual routing costs and location; more informative than summing depot distances because it models customer-to-customer arcs and the current partial route; and more useful than a purely geometric estimate because load, residual capacity, vehicles used, and fleet infeasibility affect the value.",
+  "design": [
+    "Operator-based travel-cost reconstruction",
+    "Geometric directed routing relaxation over unvisited customers",
+    "Capacity and fleet resource bound",
+    "Resource dead-end detection",
+    "Precomputed sorted adjacency lists"
+  ],
+  "complexity": "O(n) per state with a constant number of pre-sorted neighbor probes per pending customer; state-vector filling is linear in the task state representation.",
+  "fallbacks": "Missing operator arcs are filled only from explicit travel-cost PNE names, then missing via-depot arcs are composed from known directed customer-to-depot and depot-to-customer legs. Missing exact capacity, demand, or max-vehicles PNEs do not fail construction: capacity and fleet limits default to f64::MAX and demands to 0.0, degrading only the resource terms. Construction fails clearly if mandatory depot departure/return costs remain unusable.",
+  "known_limitations": [
+    "The fixed-width nearest-neighbor relaxation can miss a useful pending neighbor when its closest precomputed alternatives have already been visited.",
+    "The capacity boundary and fleet-pressure terms are intentionally non-admissible and may double-count some depot travel.",
+    "If the translator removes exact demand, capacity, or max-vehicles PNEs, resource reasoning becomes permissive and the heuristic relies mostly on routing structure."
+  ]
+}

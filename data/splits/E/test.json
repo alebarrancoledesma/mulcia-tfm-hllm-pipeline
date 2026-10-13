@@ -1,0 +1,9 @@
+{
+  "family": "E",
+  "split": "test",
+  "description": "TEST E congelado. Dos instancias, disjuntas de prompt/dev. n31-k7 y n33-k4 (no hay más E n<=33).",
+  "instances": [
+    "E-n31-k7",
+    "E-n33-k4"
+  ]
+}

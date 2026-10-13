@@ -1,0 +1,13 @@
+PlanForge: /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/../mulcia-tfm-PlanForge
+Instancias: A-n33-k5 A-n48-k7 A-n65-k9
+CSV: /mnt/c/Code/GitHub/TFM/mulcia-tfm-hllm-pipeline/experiments/first_approach/gbfs_300s_metrics.csv
+
+Compilando planforge...
+planforge compilado.
+>>> blind  gbfs(blind())  A-n33-k5
+    OOM rc=6
+>>> blind  gbfs(blind())  A-n48-k7
+    OOM rc=6
+>>> blind  gbfs(blind())  A-n65-k9
+    OOM rc=6
+>>> ff  gbfs(ff())  A-n33-k5

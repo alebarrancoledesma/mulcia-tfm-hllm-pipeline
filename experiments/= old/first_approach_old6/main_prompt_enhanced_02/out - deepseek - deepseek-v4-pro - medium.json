@@ -1,0 +1,25 @@
+{
+  "what": "The heuristic precomputes CVRP-specific static information once in new(): semantic loc/visited facts and object-to-index mappings; IDs for load() and vehicles(); optional exact-name capacity(), max_vehicles(), and demand(c) values with permissive defaults; direct and via-depot travel-cost matrices reconstructed primarily from grounded operator costs; and pre-sorted nearest-neighbor lists for direct and via-depot transitions. At evaluation time it reads the current loc, visited set, load, and vehicles, then performs a state-dependent greedy capacitated completion from the current location. It considers direct visits when load permits and visit-via-depot transitions when a new vehicle is available, choosing the cheaper next unvisited customer from precomputed nearest-neighbor lists. It adds final return-to-depot cost, plus explicit capacity-pressure and fleet-pressure components. Resource-infeasible states receive a large finite penalty.",
+  "why": "The representative instances are small-to-medium capacitated routing problems with a single depot, dense and explicit metric travel costs, heterogeneous customer demands, and small/medium fleet limits. In this family, the remaining cost depends sharply on current location, current load, vehicles already used, and which customers remain unvisited. A pure unvisited-count or sum-of-depot-radii heuristic ignores both sequencing and capacity; those would be weak here because many instances have tight capacity and fleet limits that force visit-via-depot reload transitions. Extracting costs from grounded visit, visit-via-depot, and return-to-depot operators makes the heuristic respect the actual action costs rather than fragile PNE substring parsing. The greedy nearest-neighbor completion is re-anchored to the current state on every evaluation, so it distinguishes different locations, loads, and unvisited sets. Explicit capacity and vehicle terms add additional guidance in states where one more bad direct visit would make future routes infeasible or force an extra depot reload.",
+  "instance_patterns": [
+    "Single depot center with all routes starting and ending at the depot.",
+    "Small/medium fleet limits (e.g. 2 or 8 vehicles) relative to customer count.",
+    "Dense, explicit metric travel-cost matrices between places.",
+    "Heterogeneous customer demands with capacity tight enough that visit-via-depot transitions are frequent.",
+    "Goal requires all customers visited and final location at the depot."
+  ],
+  "design": [
+    "Operator-based travel cost reconstruction from grounded visit, visit-via-depot, and return-to-depot actions.",
+    "Precomputed nearest-neighbor lists for direct and via-depot transitions.",
+    "Capacity/resource lower bound and infeasibility penalty using remaining demand, current load, capacity, and remaining vehicles.",
+    "State-dependent greedy capacitated routing completion anchored at the current location.",
+    "Dead-end detection when no feasible direct or via-depot move remains under resource limits."
+  ],
+  "complexity": "Per compute_heuristic(): O(n + k*d) expected, where n is number of customers, k is number of unvisited customers, and d is the average number of pre-sorted neighbors skipped. Worst-case is O(n^2) because some nearest-list scans may revisit visited neighbors, but for the target instance scale (tens of customers) this is small and no sorting or matrix rebuild occurs at evaluation time.",
+  "fallbacks": "Travel costs are extracted first from grounded operators. If some direct arcs remain missing, the implementation attempts an exact PNE fallback by parsing names containing travel-cost(. Missing direct arcs are then filled conservatively via depot if both legs are known, and missing via-depot arcs are filled as direct-from-to plus direct-to-depot. If depot-to-customer costs are still missing for any customer after all fallbacks, construction fails with a clear HeuristicBuildError. Optional capacity, max_vehicles, and demand numeric variables use exact trimmed names only; if absent, capacity and max_vehicles degrade to INF and demand to 0.0 so new() still succeeds.",
+  "known_limitations": [
+    "The greedy nearest-neighbor completion can be myopic locally, missing globally better customer ordering.",
+    "The capacity and vehicle pressure components are heuristic penalties with hand-tuned small coefficients and can overcount or undercount the true effect of depot reloads.",
+    "If exact demand PNE names are absent, the resource components degrade to weak defaults; the routing term still uses operator costs but capacity guidance is reduced."
+  ]
+}
