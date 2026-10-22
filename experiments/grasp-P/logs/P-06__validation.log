@@ -1,0 +1,9 @@
+{"valid": false, "imports": ["__future__", "math", "src.cvrp", "typing"], "runtime_0": 5.67967030001455, "error": "error: WORKER pid=24016 candidate=P-06 instance=None\nTraceback (most recent call last):\n  File \"C:\\Code\\GitHub\\TFM\\mulcia-tfm-hllm-pipeline\\scripts\\grasp_evaluate.py\", line 507, in <module>\n    main()\n  File \"C:\\Code\\GitHub\\TFM\\mulcia-tfm-hllm-pipeline\\scripts\\grasp_evaluate.py\", line 501, in main\n    worker(args)\n  File \"C:\\Code\\GitHub\\TFM\\mulcia-tfm-hllm-pipeline\\scripts\\grasp_evaluate.py\", line 199, in worker\n    save(args.result, smoke(args.candidate))\n                      ^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Code\\GitHub\\TFM\\mulcia-tfm-hllm-pipeline\\scripts\\grasp_evaluate.py\", line 190, in smoke\n    assert metrics['feasible'], 'no feasible smoke solution'\n           ~~~~~~~^^^^^^^^^^^^\nAssertionError: no feasible smoke solution\n"}
+VALIDATION_CONFIG 01e7ad856f46ccf54526532017ceb51ccbc541a9bada552ef9cc23cbc1b0d782
+WORKER pid=27224 candidate=P-06 instance=None
+CHILD_STATUS ok wall_seconds=0.6106362999998964
+SMOKE_CHECKS [{"instance": "construction-smoke", "cost": 3.414213562373095, "runtime": 0.05000590000418015, "status": "ok"}]
+WORKER pid=15440 candidate=P-06 instance=None
+CHILD_STATUS ok wall_seconds=0.608049000002211
+SMOKE_CHECKS [{"instance": "construction-smoke", "cost": 3.414213562373095, "runtime": 0.05000689998269081, "status": "ok"}]
+{"valid": true, "imports": ["__future__", "math", "src.cvrp", "typing"], "runtime_0": 0.6109705000126269, "runtime_1": 0.6083683000179008, "status": "ok"}

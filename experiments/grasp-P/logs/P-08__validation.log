@@ -1,0 +1,9 @@
+{"valid": true, "imports": ["__future__", "math", "src.cvrp", "typing"], "runtime_0": 5.6769056000048295, "runtime_1": 5.672587599983672}
+VALIDATION_CONFIG 01e7ad856f46ccf54526532017ceb51ccbc541a9bada552ef9cc23cbc1b0d782
+WORKER pid=11276 candidate=P-08 instance=None
+CHILD_STATUS ok wall_seconds=0.6007287000247743
+SMOKE_CHECKS [{"instance": "construction-smoke", "cost": 3.414213562373095, "runtime": 0.05000370001653209, "status": "ok"}]
+WORKER pid=37148 candidate=P-08 instance=None
+CHILD_STATUS ok wall_seconds=0.5979466999997385
+SMOKE_CHECKS [{"instance": "construction-smoke", "cost": 3.414213562373095, "runtime": 0.050004899996565655, "status": "ok"}]
+{"valid": true, "imports": ["__future__", "math", "src.cvrp", "typing"], "runtime_0": 0.601048600015929, "runtime_1": 0.5983535000123084, "status": "ok"}

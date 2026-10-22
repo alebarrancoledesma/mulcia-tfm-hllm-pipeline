@@ -1,0 +1,5 @@
+CONFIG 8b29e1d431e82afffd649bb8a0addf23f75276ad935b709be1b939e7b8f9668c
+WORKER pid=49000 candidate=P-10 instance=P-n16-k8
+METRICS {"first_solution_time": 0.00036669999826699495, "first_solution_cost": 472.8387157568368, "best_cost": 462.68870249339477, "time_to_best": 0.000977099989540875, "elapsed": 300.00001049999264, "iterations": 844219, "feasible": true, "routes": [[11, 10, 1], [6], [13, 9, 7], [15, 4], [2], [14, 5], [3, 12], [8]], "improvements": [{"time": 0.00036669999826699495, "cost": 472.8387157568368}, {"time": 0.0006848000048194081, "cost": 468.91655483811314}, {"time": 0.000977099989540875, "cost": 462.68870249339477}], "first_routes": [[6], [11, 10, 1], [13, 9, 5], [14, 7], [2], [15, 4], [3, 12], [8]]}
+
+RESUME_CONFIG 01e7ad856f46ccf54526532017ceb51ccbc541a9bada552ef9cc23cbc1b0d782 evaluator-only previous=8b29e1d431e82afffd649bb8a0addf23f75276ad935b709be1b939e7b8f9668c unchanged_config_sha256=c8a844054aa67dc937372a36b8327f1542ce89115bdc471c7675c82ada6c45a6 evaluator_before=b7576ffa67e6be332326a9773db8968efd1ab48c892493592f45c484a5232028 evaluator_after=f5fae938f7570a606a9ba177b1f34275f4ed87d3ba45f639d2953f09617e6fed

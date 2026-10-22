@@ -1,0 +1,676 @@
+# Role and objective
+
+You are a highly-skilled professor in combinatorial optimization and a proficient Python programmer designing a CVRP insertion score for GRASP. Produce one useful heuristic to minimize final total routing distance after construction and intra-route 2-opt. Use the representative instances as structural motivation: their layout, demand pattern, and capacity pressure. Be creative with the information the caller gives you. Geometry, demand, remaining capacity, the current route, and the other unassigned customers are all available. This is not a remaining-cost estimate or an admissible search heuristic. Lower score means a better candidate.
+
+# GRASP environment and exact contract
+
+Implement exactly:
+`heuristic(instance, solution, unassigned, route_index, customer, position) -> float`.
+The caller passes all six arguments by keyword. Return a finite Python float.
+
+Construction opens a new route with the farthest unassigned customer from the depot. For each customer that fits the current route's remaining capacity, the caller evaluates your score at every position in [0, len(route)] and keeps the earliest position whose score is lowest. That customer then enters the RCL with the kept score. The RCL contains entries with score <= `min_score + alpha*(max_score-min_score)`, and the caller randomly chooses one of them. Only the caller uses randomness. Your score selects both the insertion slot and the customer's priority. When no customer fits, the route is closed and a new one is started. Fleet size is unrestricted: the k in instance names is NOT a vehicle constraint.
+
+Runtime API (do not invent attributes or modules):
+- `instance.coords`: list of (x, y) coordinates; `instance.demands`: list of demands.
+- `instance.capacity`: positive capacity; `instance.depot`: zero-based depot index.
+- `instance.n`: number of nodes including depot; `instance.alpha`: RCL parameter.
+- `instance.distance_matrix[i][j]`: precomputed real Euclidean distance (math.hypot), NOT rounded integer CVRPLIB distance. Use this matrix; do not rebuild it.
+- `solution` is a list of lists of customer indices, NOT a Solution object. Routes exclude depot nodes. `solution[route_index]` is the current partial route; earlier routes are already completed. Do not scan all routes.
+- `unassigned` is a list including `customer` itself and possibly other customers that do not fit. Exclude the candidate from any other-customer statistic.
+- `customer` is not yet in a route and is already known to fit the current route.
+- `position` is one index in [0, len(route)]. The caller invokes you once for every such index of this customer. Its predecessor/successor is the depot at the corresponding boundary. Be robust to empty routes and singleton unassigned.
+- Input VRP node labels 1..n are mapped to indices 0..n-1 by the parser.
+
+# Purity and computational limits
+
+No mutations of inputs, global caches, random calls, network, files, logging, environment access, dynamic execution, or extra libraries. Only math and typing from the standard library are permitted if needed, plus the optional exact `from src.cvrp import Instance`. Prefer postponed annotations and TYPE_CHECKING as in the template so importing the module needs no runtime GRASP import. No other GRASP imports. Do not hardcode customer IDs, names, family names, dimensions, capacities, fleets, or numeric values copied from the examples. You may scan the current route and the unassigned customers, including a combined pass over both. Do not rebuild the distance matrix and do not solve an optimization subproblem inside the score. Guard zero denominators and degenerate geometry.
+
+# Representative instances: family P
+
+These are exactly five complete real VRP instances, for structural context only. Only source COMMENT fields revealing optimal/best objective values have been omitted; all other source data, including coordinates, demands and capacity, are unchanged. No .sol solution is supplied. Do not compute an integer-distance optimality gap: our objective uses real Euclidean distances and unrestricted fleet size. Do not assume these examples establish generalization. Later evaluation must include held-out instances from this family AND outside this family. No evaluation has occurred yet; do not claim empirical improvements.
+
+## P-n16-k8
+```text
+NAME : P-n16-k8
+TYPE : CVRP
+DIMENSION : 16
+EDGE_WEIGHT_TYPE : EUC_2D
+CAPACITY : 35
+NODE_COORD_SECTION
+1 30 40
+2 37 52
+3 49 49
+4 52 64
+5 31 62
+6 52 33
+7 42 41
+8 52 41
+9 57 58
+10 62 42
+11 42 57
+12 27 68
+13 43 67
+14 58 48
+15 58 27
+16 37 69
+DEMAND_SECTION
+1 0
+2 19
+3 30
+4 16
+5 23
+6 11
+7 31
+8 15
+9 28
+10 8
+11 8
+12 7
+13 14
+14 6
+15 19
+16 11
+DEPOT_SECTION
+ 1
+ -1
+EOF
+
+```
+
+## P-n23-k8
+```text
+NAME : P-n23-k8
+TYPE : CVRP
+DIMENSION : 23
+EDGE_WEIGHT_TYPE : EUC_2D
+CAPACITY : 40
+NODE_COORD_SECTION
+1 30 40
+2 37 52
+3 49 49
+4 52 64
+5 31 62
+6 52 33
+7 42 41
+8 52 41
+9 57 58
+10 62 42
+11 42 57
+12 27 68
+13 43 67
+14 58 48
+15 58 27
+16 37 69
+17 38 46
+18 61 33
+19 62 63
+20 63 69
+21 45 35
+22 32 39
+23 56 37
+DEMAND_SECTION
+1 0
+2 7
+3 30
+4 16
+5 23
+6 11
+7 19
+8 15
+9 28
+10 8
+11 8
+12 7
+13 14
+14 6
+15 19
+16 11
+17 12
+18 26
+19 17
+20 6
+21 15
+22 5
+23 10
+DEPOT_SECTION
+ 1
+ -1
+EOF
+
+```
+
+## P-n50-k10
+```text
+NAME : P-n50-k10
+TYPE : CVRP
+DIMENSION : 50
+EDGE_WEIGHT_TYPE : EUC_2D
+CAPACITY : 100
+NODE_COORD_SECTION
+1 40 40
+2 22 22
+3 36 26
+4 21 45
+5 45 35
+6 55 20
+7 33 34
+8 50 50
+9 55 45
+10 26 59
+11 40 66
+12 55 65
+13 35 51
+14 62 35
+15 62 57
+16 62 24
+17 21 36
+18 33 44
+19 9 56
+20 62 48
+21 66 14
+22 44 13
+23 26 13
+24 11 28
+25 7 43
+26 17 64
+27 41 46
+28 55 34
+29 35 16
+30 52 26
+31 43 26
+32 31 76
+33 22 53
+34 26 29
+35 50 40
+36 55 50
+37 54 10
+38 60 15
+39 47 66
+40 30 60
+41 30 50
+42 12 17
+43 15 14
+44 16 19
+45 21 48
+46 50 30
+47 51 42
+48 50 15
+49 48 21
+50 12 38
+DEMAND_SECTION
+1 0
+2 18
+3 26
+4 11
+5 30
+6 21
+7 19
+8 15
+9 16
+10 29
+11 26
+12 37
+13 16
+14 12
+15 31
+16 8
+17 19
+18 20
+19 13
+20 15
+21 22
+22 28
+23 12
+24 6
+25 27
+26 14
+27 18
+28 17
+29 29
+30 13
+31 22
+32 25
+33 28
+34 27
+35 19
+36 10
+37 12
+38 14
+39 24
+40 16
+41 33
+42 15
+43 11
+44 18
+45 17
+46 21
+47 27
+48 19
+49 20
+50 5
+DEPOT_SECTION
+ 1
+ -1
+EOF
+
+```
+
+## P-n76-k4
+```text
+NAME : P-n76-k4
+TYPE : CVRP
+DIMENSION : 76
+EDGE_WEIGHT_TYPE : EUC_2D
+CAPACITY : 350
+NODE_COORD_SECTION
+1 40 40
+2 22 22
+3 36 26
+4 21 45
+5 45 35
+6 55 20
+7 33 34
+8 50 50
+9 55 45
+10 26 59
+11 40 66
+12 55 65
+13 35 51
+14 62 35
+15 62 57
+16 62 24
+17 21 36
+18 33 44
+19 9 56
+20 62 48
+21 66 14
+22 44 13
+23 26 13
+24 11 28
+25 7 43
+26 17 64
+27 41 46
+28 55 34
+29 35 16
+30 52 26
+31 43 26
+32 31 76
+33 22 53
+34 26 29
+35 50 40
+36 55 50
+37 54 10
+38 60 15
+39 47 66
+40 30 60
+41 30 50
+42 12 17
+43 15 14
+44 16 19
+45 21 48
+46 50 30
+47 51 42
+48 50 15
+49 48 21
+50 12 38
+51 15 56
+52 29 39
+53 54 38
+54 55 57
+55 67 41
+56 10 70
+57 6 25
+58 65 27
+59 40 60
+60 70 64
+61 64 4
+62 36 6
+63 30 20
+64 20 30
+65 15 5
+66 50 70
+67 57 72
+68 45 42
+69 38 33
+70 50 4
+71 66 8
+72 59 5
+73 35 60
+74 27 24
+75 40 20
+76 40 37
+DEMAND_SECTION
+1 0
+2 18
+3 26
+4 11
+5 30
+6 21
+7 19
+8 15
+9 16
+10 29
+11 26
+12 37
+13 16
+14 12
+15 31
+16 8
+17 19
+18 20
+19 13
+20 15
+21 22
+22 28
+23 12
+24 6
+25 27
+26 14
+27 18
+28 17
+29 29
+30 13
+31 22
+32 25
+33 28
+34 27
+35 19
+36 10
+37 12
+38 14
+39 24
+40 16
+41 33
+42 15
+43 11
+44 18
+45 17
+46 21
+47 27
+48 19
+49 20
+50 5
+51 22
+52 12
+53 19
+54 22
+55 16
+56 7
+57 26
+58 14
+59 21
+60 24
+61 13
+62 15
+63 18
+64 11
+65 28
+66 9
+67 37
+68 30
+69 10
+70 8
+71 11
+72 3
+73 1
+74 6
+75 10
+76 20
+DEPOT_SECTION
+ 1
+ -1
+EOF
+
+```
+
+## P-n101-k4
+```text
+NAME : P-n101-k4
+TYPE : CVRP
+DIMENSION : 101
+EDGE_WEIGHT_TYPE : EUC_2D
+CAPACITY : 400
+NODE_COORD_SECTION
+1 35 35
+2 41 49
+3 35 17
+4 55 45
+5 55 20
+6 15 30
+7 25 30
+8 20 50
+9 10 43
+10 55 60
+11 30 60
+12 20 65
+13 50 35
+14 30 25
+15 15 10
+16 30 5
+17 10 20
+18 5 30
+19 20 40
+20 15 60
+21 45 65
+22 45 20
+23 45 10
+24 55 5
+25 65 35
+26 65 20
+27 45 30
+28 35 40
+29 41 37
+30 64 42
+31 40 60
+32 31 52
+33 35 69
+34 53 52
+35 65 55
+36 63 65
+37 2 60
+38 20 20
+39 5 5
+40 60 12
+41 40 25
+42 42 7
+43 24 12
+44 23 3
+45 11 14
+46 6 38
+47 2 48
+48 8 56
+49 13 52
+50 6 68
+51 47 47
+52 49 58
+53 27 43
+54 37 31
+55 57 29
+56 63 23
+57 53 12
+58 32 12
+59 36 26
+60 21 24
+61 17 34
+62 12 24
+63 24 58
+64 27 69
+65 15 77
+66 62 77
+67 49 73
+68 67 5
+69 56 39
+70 37 47
+71 37 56
+72 57 68
+73 47 16
+74 44 17
+75 46 13
+76 49 11
+77 49 42
+78 53 43
+79 61 52
+80 57 48
+81 56 37
+82 55 54
+83 15 47
+84 14 37
+85 11 31
+86 16 22
+87 4 18
+88 28 18
+89 26 52
+90 26 35
+91 31 67
+92 15 19
+93 22 22
+94 18 24
+95 26 27
+96 25 24
+97 22 27
+98 25 21
+99 19 21
+100 20 26
+101 18 18
+DEMAND_SECTION
+1 0
+2 10
+3 7
+4 13
+5 19
+6 26
+7 3
+8 5
+9 9
+10 16
+11 16
+12 12
+13 19
+14 23
+15 20
+16 8
+17 19
+18 2
+19 12
+20 17
+21 9
+22 11
+23 18
+24 29
+25 3
+26 6
+27 17
+28 16
+29 16
+30 9
+31 21
+32 27
+33 23
+34 11
+35 14
+36 8
+37 5
+38 8
+39 16
+40 31
+41 9
+42 5
+43 5
+44 7
+45 18
+46 16
+47 1
+48 27
+49 36
+50 30
+51 13
+52 10
+53 9
+54 14
+55 18
+56 2
+57 6
+58 7
+59 18
+60 28
+61 3
+62 13
+63 19
+64 10
+65 9
+66 20
+67 25
+68 25
+69 36
+70 6
+71 5
+72 15
+73 25
+74 9
+75 8
+76 18
+77 13
+78 14
+79 3
+80 23
+81 6
+82 26
+83 16
+84 11
+85 7
+86 41
+87 35
+88 26
+89 9
+90 15
+91 3
+92 1
+93 2
+94 22
+95 27
+96 20
+97 11
+98 12
+99 10
+100 9
+101 17
+DEPOT_SECTION
+ 1
+ -1
+EOF
+
+```
+
+# Template
+
+Return a complete importable Python module using this interface. Replace the placeholder with your scoring rule and add pure helper functions within the cost constraints.
+
+```python
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.cvrp import Instance
+
+
+def heuristic(
+    instance: Instance,
+    solution: list[list[int]],
+    unassigned: list[int],
+    route_index: int,
+    customer: int,
+    position: int,
+) -> float:
+    """Lower score means a better feasible insertion candidate."""
+    # Placeholder only. Replace it with a scoring rule.
+    return 0.0
+
+```
+
+# Output format
+
+Return only one JSON object with exactly three string fields:
+- `code`: COMPLETE Python module, without Markdown fences.
+- `what`: concise technical explanation accurately describing the score and cost.
+- `why`: motivation for this design and its limitations; no fabricated results.

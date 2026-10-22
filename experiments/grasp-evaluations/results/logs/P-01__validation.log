@@ -1,0 +1,8 @@
+VALIDATION_CONFIG 87f6f58b2dd60a0fae639e6a39caa10fc40b460d64b581c47f827795146bd59b
+WORKER pid=45684 candidate=P-01 instance=None
+CHILD_STATUS ok wall_seconds=0.7821089000208303
+SMOKE_CHECKS [{"instance": "construction-smoke", "cost": 3.414213562373095, "runtime": 0.05000599997583777, "status": "ok"}]
+WORKER pid=3208 candidate=P-01 instance=None
+CHILD_STATUS ok wall_seconds=0.8385571000399068
+SMOKE_CHECKS [{"instance": "construction-smoke", "cost": 3.414213562373095, "runtime": 0.05000770004699007, "status": "ok"}]
+{"valid": true, "imports": ["__future__", "math", "src.cvrp", "typing"], "runtime_0": 0.7827718000044115, "runtime_1": 0.838984900037758, "status": "ok"}

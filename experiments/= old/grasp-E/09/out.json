@@ -1,0 +1,4 @@
+{
+  "what": "The score is the fixed position's exact insertion-distance increase minus the candidate's distance from the depot. It is a generalized cheapest-insertion criterion with radial urgency and costs O(1) time and memory per call.",
+  "why": "Pure insertion cost can postpone remote customers even when they fit the current outer route, potentially forcing later depot trips. The depot-distance credit favors assigning such customers while the insertion term rejects geometrically incompatible detours; this complements farthest-customer route seeding and leaves 2-opt to repair route order. The rule is deliberately scale-free and demand-independent beyond caller feasibility. It remains myopic: it does not anticipate capacity-packing conflicts, future candidates, or cross-route improvements, so it is not guaranteed to outperform plain cheapest insertion on every instance."
+}

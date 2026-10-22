@@ -1,0 +1,5 @@
+CONFIG 8b29e1d431e82afffd649bb8a0addf23f75276ad935b709be1b939e7b8f9668c
+WORKER pid=47316 candidate=P-07 instance=P-n16-k8
+METRICS {"first_solution_time": 0.00037980001070536673, "first_solution_cost": 492.5150371896988, "best_cost": 462.68870249339477, "time_to_best": 0.0022308999905362725, "elapsed": 300.00000790000195, "iterations": 780351, "feasible": true, "routes": [[11, 10, 1], [6], [14, 5], [13, 9, 7], [2], [15, 4], [3, 12], [8]], "improvements": [{"time": 0.00037980001070536673, "cost": 492.5150371896988}, {"time": 0.000808700016932562, "cost": 468.91655483811314}, {"time": 0.0022308999905362725, "cost": 462.68870249339477}], "first_routes": [[13, 10, 1], [6], [2], [5, 9, 7], [11, 4], [15, 12], [3, 14], [8]]}
+
+RESUME_CONFIG 01e7ad856f46ccf54526532017ceb51ccbc541a9bada552ef9cc23cbc1b0d782 evaluator-only previous=8b29e1d431e82afffd649bb8a0addf23f75276ad935b709be1b939e7b8f9668c unchanged_config_sha256=c8a844054aa67dc937372a36b8327f1542ce89115bdc471c7675c82ada6c45a6 evaluator_before=b7576ffa67e6be332326a9773db8968efd1ab48c892493592f45c484a5232028 evaluator_after=f5fae938f7570a606a9ba177b1f34275f4ed87d3ba45f639d2953f09617e6fed

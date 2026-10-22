@@ -1,0 +1,4 @@
+CONFIG 01e7ad856f46ccf54526532017ceb51ccbc541a9bada552ef9cc23cbc1b0d782
+WORKER pid=27492 candidate=P-06 instance=P-n16-k8
+METRICS {"first_solution_time": 0.0006662000087089837, "first_solution_cost": 472.8387157568368, "best_cost": 462.68870249339477, "time_to_best": 0.004641200008336455, "elapsed": 300.00001830002293, "iterations": 472830, "feasible": true, "routes": [[11, 10, 1], [6], [13, 9, 7], [14, 5], [2], [15, 4], [3, 12], [8]], "improvements": [{"time": 0.0006662000087089837, "cost": 472.8387157568368}, {"time": 0.0012102000182494521, "cost": 468.91655483811314}, {"time": 0.004641200008336455, "cost": 462.68870249339477}], "first_routes": [[6], [11, 10, 1], [2], [5, 9, 13], [14, 7], [15, 4], [3, 12], [8]]}
+CHILD_STATUS ok wall_seconds=300.1140888000082

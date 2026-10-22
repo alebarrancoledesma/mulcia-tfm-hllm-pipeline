@@ -1,0 +1,124 @@
+2026-10-22T08:29:36.5098369+02:00 COORDINATOR pid=43392
+2026-10-22T08:29:36.5158503+02:00 STAGE evaluate E
+VALIDATION baseline {'valid': True, 'imports': ['__future__', 'src.cvrp'], 'runtime_0': 0.5986979999870528, 'runtime_1': 0.6479071000067052, 'status': 'ok'}
+VALIDATION E-01 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6242548000009265, 'runtime_1': 0.6081609000102617, 'status': 'ok'}
+VALIDATION E-02 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6128565999970306, 'runtime_1': 0.6212634999828879, 'status': 'ok'}
+VALIDATION E-03 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6234855999937281, 'runtime_1': 0.6248578999948222, 'status': 'ok'}
+VALIDATION E-04 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6001569999789353, 'runtime_1': 0.6137909000099171, 'status': 'ok'}
+VALIDATION E-05 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6435857000178657, 'runtime_1': 0.6535170999995898, 'status': 'ok'}
+VALIDATION E-06 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6480214000039268, 'runtime_1': 0.6433954999956768, 'status': 'ok'}
+VALIDATION E-07 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6214987999992445, 'runtime_1': 0.6185446000017691, 'status': 'ok'}
+VALIDATION E-08 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6159357999858912, 'runtime_1': 0.6102577999990899, 'status': 'ok'}
+VALIDATION E-09 {'valid': True, 'imports': ['__future__', 'src.cvrp', 'typing'], 'runtime_0': 0.6290624000248499, 'runtime_1': 0.6445853000041097, 'status': 'ok'}
+VALIDATION E-10 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6762617000204045, 'runtime_1': 0.6176819000102114, 'status': 'ok'}
+2026-10-22T08:29:50.7338184+02:00 STAGE evaluate P
+VALIDATION baseline {'valid': True, 'imports': ['__future__', 'src.cvrp'], 'runtime_0': 0.6202284999890253, 'runtime_1': 0.6794533000211231, 'status': 'ok'}
+VALIDATION P-01 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.5976467000145931, 'runtime_1': 0.6212628000066616, 'status': 'ok'}
+VALIDATION P-02 {'valid': True, 'imports': ['__future__', 'src.cvrp', 'typing'], 'runtime_0': 0.6547804000147153, 'runtime_1': 0.6016286000085529, 'status': 'ok'}
+VALIDATION P-03 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.5921268000092823, 'runtime_1': 0.5947110999841243, 'status': 'ok'}
+VALIDATION P-04 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6154914000071585, 'runtime_1': 0.6079091999854427, 'status': 'ok'}
+VALIDATION P-05 {'valid': True, 'imports': ['__future__', 'src.cvrp', 'typing'], 'runtime_0': 0.5965611000137869, 'runtime_1': 0.6364579999935813, 'status': 'ok'}
+VALIDATION P-06 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6109705000126269, 'runtime_1': 0.6083683000179008, 'status': 'ok'}
+VALIDATION P-07 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.5897675000014715, 'runtime_1': 0.5971540000173263, 'status': 'ok'}
+VALIDATION P-08 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.601048600015929, 'runtime_1': 0.5983535000123084, 'status': 'ok'}
+VALIDATION P-09 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6383615000231657, 'runtime_1': 0.638103700010106, 'status': 'ok'}
+VALIDATION P-10 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.6348774000070989, 'runtime_1': 0.6160500000114553, 'status': 'ok'}
+START dev-P-P-n16-k8-P-03
+FINISH dev-P-P-n16-k8-P-03 ok 462.68870249339477
+START dev-P-P-n16-k8-P-06
+FINISH dev-P-P-n16-k8-P-06 ok 462.68870249339477
+START dev-P-P-n16-k8-P-09
+FINISH dev-P-P-n16-k8-P-09 ok 462.68870249339477
+START dev-P-P-n23-k8-P-03
+FINISH dev-P-P-n23-k8-P-03 ok 572.2254602488674
+START dev-P-P-n23-k8-P-06
+FINISH dev-P-P-n23-k8-P-06 ok 569.2944699833499
+START dev-P-P-n23-k8-P-09
+FINISH dev-P-P-n23-k8-P-09 ok 557.1166039602392
+START dev-P-P-n50-k10-P-03
+FINISH dev-P-P-n50-k10-P-03 ok 827.8826701948752
+START dev-P-P-n50-k10-P-05
+FINISH dev-P-P-n50-k10-P-05 ok 818.7776871426338
+START dev-P-P-n50-k10-P-06
+FINISH dev-P-P-n50-k10-P-06 ok 817.4726536265701
+START dev-P-P-n50-k10-P-07
+FINISH dev-P-P-n50-k10-P-07 ok 807.5249633732265
+START dev-P-P-n50-k10-P-08
+FINISH dev-P-P-n50-k10-P-08 ok 818.2293751521654
+START dev-P-P-n50-k10-P-09
+FINISH dev-P-P-n50-k10-P-09 ok 776.4359798582601
+START dev-P-P-n50-k10-P-10
+FINISH dev-P-P-n50-k10-P-10 ok 824.9735036851074
+START dev-P-P-n76-k4-baseline
+FINISH dev-P-P-n76-k4-baseline ok 752.5578595374559
+START dev-P-P-n76-k4-P-01
+FINISH dev-P-P-n76-k4-P-01 ok 677.1676514767104
+START dev-P-P-n76-k4-P-02
+FINISH dev-P-P-n76-k4-P-02 ok 714.8267427968672
+START dev-P-P-n76-k4-P-03
+FINISH dev-P-P-n76-k4-P-03 ok 774.5259579783533
+START dev-P-P-n76-k4-P-04
+FINISH dev-P-P-n76-k4-P-04 ok 768.6732202761357
+START dev-P-P-n76-k4-P-05
+FINISH dev-P-P-n76-k4-P-05 ok 756.5750370265624
+START dev-P-P-n76-k4-P-06
+FINISH dev-P-P-n76-k4-P-06 ok 766.6621441334039
+START dev-P-P-n76-k4-P-07
+FINISH dev-P-P-n76-k4-P-07 ok 722.1503124788645
+START dev-P-P-n76-k4-P-08
+FINISH dev-P-P-n76-k4-P-08 ok 738.8466539289689
+START dev-P-P-n76-k4-P-09
+FINISH dev-P-P-n76-k4-P-09 ok 787.9525869973777
+START dev-P-P-n76-k4-P-10
+FINISH dev-P-P-n76-k4-P-10 ok 769.6276708180393
+START dev-P-P-n101-k4-baseline
+FINISH dev-P-P-n101-k4-baseline ok 931.1265198731443
+START dev-P-P-n101-k4-P-01
+FINISH dev-P-P-n101-k4-P-01 ok 821.7697860681891
+START dev-P-P-n101-k4-P-02
+FINISH dev-P-P-n101-k4-P-02 ok 851.3727613380407
+START dev-P-P-n101-k4-P-03
+FINISH dev-P-P-n101-k4-P-03 ok 963.4464957621931
+START dev-P-P-n101-k4-P-04
+FINISH dev-P-P-n101-k4-P-04 ok 963.7559339098218
+START dev-P-P-n101-k4-P-05
+FINISH dev-P-P-n101-k4-P-05 ok 908.1528114608652
+START dev-P-P-n101-k4-P-06
+FINISH dev-P-P-n101-k4-P-06 ok 935.688474493561
+START dev-P-P-n101-k4-P-07
+FINISH dev-P-P-n101-k4-P-07 ok 862.8349374954379
+START dev-P-P-n101-k4-P-08
+FINISH dev-P-P-n101-k4-P-08 ok 947.8149228669182
+START dev-P-P-n101-k4-P-09
+FINISH dev-P-P-n101-k4-P-09 ok 964.9924134620442
+START dev-P-P-n101-k4-P-10
+FINISH dev-P-P-n101-k4-P-10 ok 938.26308326713
+2026-10-22T11:25:09.8968065+02:00 STAGE cross
+VALIDATION baseline {'valid': True, 'imports': ['__future__', 'src.cvrp'], 'runtime_0': 0.7950942000024952, 'runtime_1': 0.7978250000160187, 'status': 'ok'}
+VALIDATION E-07 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.8249488000292331, 'runtime_1': 0.8204648999962956, 'status': 'ok'}
+VALIDATION P-01 {'valid': True, 'imports': ['__future__', 'math', 'src.cvrp', 'typing'], 'runtime_0': 0.7827718000044115, 'runtime_1': 0.838984900037758, 'status': 'ok'}
+START cross-E-E-n30-k3-baseline
+FINISH cross-E-E-n30-k3-baseline ok 554.1035553910998
+START cross-E-E-n30-k3-E-07
+FINISH cross-E-E-n30-k3-E-07 ok 562.1220643691057
+START cross-E-E-n30-k3-P-01
+FINISH cross-E-E-n30-k3-P-01 ok 550.4769443140635
+START cross-E-E-n22-k4-baseline
+FINISH cross-E-E-n22-k4-baseline ok 387.16463094586805
+START cross-E-E-n22-k4-E-07
+FINISH cross-E-E-n22-k4-E-07 ok 410.28054588864796
+START cross-E-E-n22-k4-P-01
+FINISH cross-E-E-n22-k4-P-01 ok 387.16463094586805
+START cross-P-P-n19-k2-baseline
+FINISH cross-P-P-n19-k2-baseline ok 212.6569041858923
+START cross-P-P-n19-k2-E-07
+FINISH cross-P-P-n19-k2-E-07 ok 227.19766929083332
+START cross-P-P-n19-k2-P-01
+FINISH cross-P-P-n19-k2-P-01 ok 212.6569041858923
+START cross-P-P-n40-k5-baseline
+FINISH cross-P-P-n40-k5-baseline ok 524.8838724765894
+START cross-P-P-n40-k5-E-07
+FINISH cross-P-P-n40-k5-E-07 ok 493.3560165596315
+START cross-P-P-n40-k5-P-01
+FINISH cross-P-P-n40-k5-P-01 ok 498.5188836785073
+2026-10-22T12:25:17.6977790+02:00 FINISHED

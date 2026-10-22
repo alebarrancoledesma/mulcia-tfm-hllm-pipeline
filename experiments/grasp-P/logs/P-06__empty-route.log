@@ -1,0 +1,1 @@
+P-06 SCORE CHECKS PASS: 328 samples, including every feasible empty-route customer; finite, pure, keyword calls, deterministic in two subprocesses. Full one-second solver smoke FAILED; see P-06__validation.log.

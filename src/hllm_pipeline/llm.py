@@ -84,12 +84,17 @@ def ollama_generate(prompt, model="qwen2.5:7b", url = "http://localhost:11434/ap
     data = response.json()
     return data["response"]
 
-def openai_generate(prompt, model="gpt-5.6-sol", temperature=None, response_schema=None, api_key=None, reasoning_effort="medium"):
+def openai_generate(prompt, model="gpt-5.6-sol", temperature=None, response_schema=None, api_key=None, reasoning_effort="medium", *, raise_errors=False, max_retries=None, timeout=None):
     try:
         load_dotenv()
 
         api_key = api_key or os.getenv("OPENAI_KEY")
-        client = OpenAI(api_key=api_key)
+        client_options = {}
+        if max_retries is not None:
+            client_options["max_retries"] = max_retries
+        if timeout is not None:
+            client_options["timeout"] = timeout
+        client = OpenAI(api_key=api_key, **client_options)
 
         params = {
             "model": model,
@@ -117,6 +122,8 @@ def openai_generate(prompt, model="gpt-5.6-sol", temperature=None, response_sche
         return response.output_text
 
     except Exception as e:
+        if raise_errors:
+            raise
         print(f"Error OpenAI: {e}")
         return '{"content": [{"status": "ERROR"}]}'
 

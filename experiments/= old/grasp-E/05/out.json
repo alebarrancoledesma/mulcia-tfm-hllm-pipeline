@@ -1,0 +1,4 @@
+{
+  "what": "The score is the fixed-position insertion cost minus the customer's standalone depot round-trip cost. Thus lower scores correspond to larger consolidation savings. For an empty route it falls back to direct insertion cost. It uses only a constant number of distance-matrix lookups, so each call is O(1).",
+  "why": "This is a sequential Clarke–Wright-style saving adapted to the caller's cheapest fixed insertion. In particular, immediately after a farthest-customer seed, it favors customers that are both expensive to serve separately and geometrically compatible with that seed. It therefore balances local insertion cost against the likely cost of opening additional depot-connected routes, while leaving randomness to the GRASP RCL. It is deliberately myopic: it does not model demand-packing opportunities, future insertions, or the exact result of 2-opt, and its preference for distant customers can be harmful when distant sectors should remain separate."
+}
