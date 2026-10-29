@@ -13,7 +13,8 @@ param(
     [int]$Candidates = 10,
     [string]$ArtifactsRoot,
     [string]$PlanForgeRoot,
-    [string]$GraspRoot
+    [string]$GraspRoot,
+    [string]$WslDistribution
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,14 +40,25 @@ if ($Experiment -eq 'numeric' -and $Stage -eq 'generate') {
 }
 
 if ($Experiment -eq 'numeric' -and $Stage -eq 'evaluate') {
+    if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
+        throw 'WSL is required for numeric evaluation, but wsl.exe was not found.'
+    }
     $selection = Join-Path $PSScriptRoot "outputs\numeric-planning\selection\$Family"
     $script = (Resolve-Path (Join-Path $PSScriptRoot 'scripts\numeric_evaluate.sh')).Path
     $planforge = (Resolve-Path $PlanForgeRoot).Path
+    $wslOptions = @()
+    if ($WslDistribution) { $wslOptions = @('--distribution', $WslDistribution) }
     $wslPaths = @($script, $selection, $selection, $ArtifactsRoot, $planforge) | ForEach-Object {
         $windowsPath = $_ -replace '\\', '/'
-        (& wsl.exe wslpath -a $windowsPath).Trim()
+        $convertedOutput = & wsl.exe @wslOptions wslpath -a $windowsPath
+        $conversionExit = $LASTEXITCODE
+        $convertedPath = ($convertedOutput | Out-String).Trim()
+        if ($conversionExit -ne 0 -or -not $convertedPath) {
+            throw "WSL could not translate path: $_"
+        }
+        $convertedPath
     }
-    & wsl.exe bash $wslPaths[0] $Family $wslPaths[1] $wslPaths[2] $wslPaths[3] $wslPaths[4]
+    & wsl.exe @wslOptions bash $wslPaths[0] $Family $wslPaths[1] $wslPaths[2] $wslPaths[3] $wslPaths[4]
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     & uv run python -m hllm_pipeline.rank (Join-Path $selection 'metrics.csv')
     exit $LASTEXITCODE

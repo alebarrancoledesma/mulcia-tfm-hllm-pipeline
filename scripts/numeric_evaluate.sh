@@ -6,6 +6,13 @@ set -Eeuo pipefail
     exit 2
 }
 
+for required_command in python3 cargo flock timeout mktemp; do
+    command -v "$required_command" >/dev/null 2>&1 || {
+        echo "Missing required command inside WSL: $required_command" >&2
+        exit 127
+    }
+done
+
 FAMILY="$1"
 CANDIDATES="$(cd "$2" && pwd)"
 OUT="$3"
@@ -47,7 +54,6 @@ trap 'exit 143' TERM
 exec 9>"$PLANFORGE/.heuristic-evaluation.lock"
 flock -n 9 || { echo "Another PlanForge evaluation is active" >&2; exit 1; }
 export CARGO_TARGET_DIR="$PLANFORGE/target"
-export CARGO_NET_OFFLINE=true
 export LC_ALL=C
 
 echo 'candidate,instance,solved,runtime,expanded,evaluated,generated,cost' > "$OUT/metrics.csv"
@@ -62,7 +68,7 @@ for number in 01 02 03 04 05 06 07 08 09 10; do
     cp "$source" "$MAIN"
     build_log="$OUT/logs/build-$number.log"
     build_rc=0
-    (cd "$PLANFORGE" && cargo build --release --locked --offline -p planforge-llm-cvrp) \
+    (cd "$PLANFORGE" && cargo build --release --locked -p planforge-llm-cvrp) \
         > "$build_log" 2>&1 || build_rc=$?
     echo "Build exit: $build_rc" >> "$build_log"
     if [[ $build_rc -ne 0 ]]; then

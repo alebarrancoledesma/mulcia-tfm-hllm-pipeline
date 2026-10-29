@@ -7,7 +7,7 @@ Código experimental para generar funciones heurísticas con un LLM, validarlas 
 - Python 3.10 o posterior y `uv`.
 - Una variable `OPENAI_KEY` en `.env` para generar candidatos.
 - `mulcia-tfm-artifacts`, `mulcia-tfm-grasp` y `mulcia-tfm-PlanForge` como directorios hermanos. Las rutas también pueden pasarse a `run.ps1`.
-- WSL, Rust y Cargo para la evaluación con PlanForge.
+- WSL con `bash`, `python3`, `flock`, `timeout`, Rust y Cargo instalados dentro de la distribución predeterminada para la evaluación con PlanForge.
 
 ```powershell
 uv sync
@@ -15,6 +15,10 @@ Copy-Item .env.example .env
 ```
 
 Después se completa `OPENAI_KEY` en el `.env` local. Este archivo está ignorado por Git y no debe publicarse. La plantilla también incluye las variables opcionales `DEEPSEEK_API_KEY` y `ARTIFICIAL_ANALYSIS_KEY`, utilizadas únicamente por funciones auxiliares asociadas a esos servicios.
+
+La disponibilidad del entorno numérico puede comprobarse desde PowerShell con `wsl bash -lc "python3 --version && cargo --version && command -v flock timeout"`. La primera compilación puede descargar las dependencias fijadas por `Cargo.lock`; las siguientes reutilizan `mulcia-tfm-PlanForge/target`.
+
+Si hay varias distribuciones instaladas, la evaluación numérica acepta `-WslDistribution`, por ejemplo `-WslDistribution kali-linux`; si se omite, `wsl.exe` utiliza la distribución predeterminada.
 
 ## Lanzador
 
