@@ -57,20 +57,26 @@ class EvaluationContracts(unittest.TestCase):
                 with log.open('a') as output:
                     output.write(detail)
                 return 'error', .1
-            with patch.object(ev, 'inspect_source', return_value=[]), patch.object(ev, 'child', side_effect=child):
+            with patch.object(ev, 'signature', return_value='fixture'), \
+                    patch.object(ev, 'inspect_source', return_value=[]), \
+                    patch.object(ev, 'child', side_effect=child):
                 records = ev.validate(args)
             self.assertFalse(records['baseline']['valid'])
             self.assertIn(detail, (folder / 'logs/baseline__validation.log').read_text())
-            row = ev.trial(args, records, 'dev', 'E', 'baseline', 'E-n23-k3')
+            with patch.object(ev, 'signature', return_value='fixture'):
+                row = ev.trial(args, records, 'dev', 'E', 'baseline', 'E-n23-k3')
             ev.publish(args, [row])
             text = (folder / 'metrics.csv').read_text()
             self.assertEqual(len(text.splitlines()), 2)
             self.assertLess(len(row['error']), 200)
             self.assertNotIn('Traceback', text)
-            with patch.object(ev, 'inspect_source', return_value=[]), patch.object(ev, 'child', return_value=('timeout', 20)):
+            with patch.object(ev, 'signature', return_value='fixture'), \
+                    patch.object(ev, 'inspect_source', return_value=[]), \
+                    patch.object(ev, 'child', return_value=('timeout', 20)):
                 records = ev.validate(args)
             self.assertIsNone(records['baseline']['valid'])
-            with patch.object(ev, 'child', return_value=('timeout', 330)) as child_mock:
+            with patch.object(ev, 'signature', return_value='fixture'), \
+                    patch.object(ev, 'child', return_value=('timeout', 330)) as child_mock:
                 timed = ev.trial(args, records, 'dev', 'E', 'baseline', 'E-n23-k3')
             child_mock.assert_called_once()
             self.assertEqual(timed['status'], 'timeout')
@@ -202,7 +208,8 @@ class EvaluationContracts(unittest.TestCase):
                 self.assertFalse(result.is_relative_to(folder))
                 return 'timeout', 330
             args = arguments(folder)
-            with patch.object(ev, 'child', side_effect=child):
+            with patch.object(ev, 'signature', return_value='fixture'), \
+                    patch.object(ev, 'child', side_effect=child):
                 row = ev.trial(args, {'baseline': {'valid': True}}, 'dev', 'E', 'baseline', 'E-n23-k3')
             ev.publish(args, [row])
             self.assertEqual(ev.read_rows(folder), [row])
@@ -220,18 +227,20 @@ class EvaluationContracts(unittest.TestCase):
                            cost=10 if candidate == 'baseline' else 20)
                 (args.output / 'logs' / f'{candidate}__{instance}.log').write_text('CONFIG ' + ev.signature(args) + '\n')
                 return row
-            with patch.object(ev, 'ROOT', root), patch.object(ev, 'configuration',
+            with patch.object(ev, 'ROOT', root), \
+                    patch.object(ev, 'SELECTION', root / 'outputs/grasp/selection'), \
+                    patch.object(ev, 'configuration',
                     side_effect=lambda a: {'stage': a.mode, 'family': a.family, 'seed': a.seed}), \
                     patch.object(ev, 'validate', return_value=valid), patch.object(ev, 'trial', side_effect=trial):
-                cross = arguments(root / 'experiments/grasp-evaluations', None, 'cross')
+                cross = arguments(root / 'outputs/grasp/cross-evaluation', None, 'cross')
                 for family in 'EP':
-                    ev.parent(arguments(root / f'experiments/grasp-{family}', family))
+                    ev.parent(arguments(root / f'outputs/grasp/selection/{family}', family))
                     self.assertFalse(cross.output.exists())
                     if family == 'E':
                         with self.assertRaises((ValueError, FileNotFoundError)):
                             ev.parent(cross)
                 self.assertEqual(len(calls), 110)
-                ev.parent(arguments(root / 'experiments/grasp-E', 'E'))
+                ev.parent(arguments(root / 'outputs/grasp/selection/E', 'E'))
                 self.assertEqual(len(calls), 110, 'completed CSV rows must not run again')
                 self.assertTrue(all(c[0] == 'dev' for c in calls))
                 for family in 'EP':
@@ -247,7 +256,7 @@ class EvaluationContracts(unittest.TestCase):
                 self.assertFalse((cross.output / 'ranking.csv').exists())
                 self.assertIn('E-01', (cross.output / 'README.md').read_text())
                 self.assertFalse((cross.output / 'config.json').exists())
-                ranking = root / 'experiments/grasp-P/ranking.csv'
+                ranking = root / 'outputs/grasp/selection/P/ranking.csv'
                 ranking.write_text('candidate,status\nP-01,complete\n')
                 with self.assertRaisesRegex(ValueError, 'ranking'):
                     ev.parent(cross)

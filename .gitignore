@@ -18,3 +18,7 @@ wheels/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# New executions are local; accepted results are published in artifacts.
+outputs/*
+!outputs/.gitkeep

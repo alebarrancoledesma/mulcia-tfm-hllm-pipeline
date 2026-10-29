@@ -3,6 +3,7 @@ import argparse
 import ast
 import concurrent.futures
 import json
+import os
 from pathlib import Path
 import sys
 import threading
@@ -12,8 +13,10 @@ from dotenv import load_dotenv
 from hllm_pipeline.llm import openai_generate, prompt_gen
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = {"E": ["E-n23-k3", "E-n33-k4", "E-n51-k5", "E-n76-k14", "E-n101-k8"],
-            "P": ["P-n16-k8", "P-n23-k8", "P-n50-k10", "P-n76-k4", "P-n101-k4"]}
+ARTIFACTS = Path(os.environ.get("TFM_ARTIFACTS_DIR", ROOT.parent / "mulcia-tfm-artifacts")).resolve()
+GRASP_INPUTS = ARTIFACTS / "inputs" / "03-grasp"
+PROTOCOL = json.loads((GRASP_INPUTS / "02-protocol" / "protocol.json").read_text(encoding="utf-8"))
+EXAMPLES = PROTOCOL["selection"]
 SCHEMA = {"type": "object", "properties": {k: {"type": "string"} for k in ("code", "what", "why")},
           "required": ["code", "what", "why"], "additionalProperties": False}
 
@@ -21,7 +24,7 @@ SCHEMA = {"type": "object", "properties": {k: {"type": "string"} for k in ("code
 def build_prompt(family):
     examples = []
     for name in EXAMPLES[family]:
-        path = ROOT.parent / "mulcia-tfm-artifacts" / "data" / "cvrplib" / family / f"{name}.vrp"
+        path = GRASP_INPUTS / "01-instances" / f"{name}.vrp"
         text = path.read_text(encoding="utf-8")
         # Omit only COMMENT fields revealing benchmark objective values.
         text = "".join(line for line in text.splitlines(keepends=True)
@@ -76,13 +79,18 @@ def main():
     parser.add_argument("--rpm", type=float, default=6)
     parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Directorio de salida (por defecto outputs/grasp/selection/<familia>)",
+    )
     args = parser.parse_args()
     if args.n < 1 or args.workers < 1 or not 0 < args.rpm <= 60:
         parser.error("n/workers must be positive; rpm must be in (0, 60]")
     started = time.monotonic()
     load_dotenv(ROOT / ".env", override=False)
     prompt = build_prompt(args.family)
-    root = ROOT / "experiments" / f"grasp-{args.family}"
+    root = (args.output or ROOT / "outputs" / "grasp" / "selection" / args.family).resolve()
     if root.exists() and any(root.iterdir()) and not args.resume:
         parser.error("Output directory must be empty for a fresh batch")
     pending = list(range(1, args.n + 1))

@@ -1,13 +1,16 @@
 """Familias CVRP, splits (prompt/dev/test) y resolución de rutas PDDL."""
 
 import json
+import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-DATA_ROOT = PROJECT_ROOT / "data"
-PDDL_ROOT = DATA_ROOT / "processed" / "pddl"
-SPLITS_ROOT = DATA_ROOT / "splits"
+ARTIFACTS_ROOT = Path(
+    os.environ.get("TFM_ARTIFACTS_DIR", PROJECT_ROOT.parent / "mulcia-tfm-artifacts")
+).resolve()
+NUMERIC_INPUTS = ARTIFACTS_ROOT / "inputs" / "02-numeric-planning"
+PDDL_ROOT = NUMERIC_INPUTS / "02-pddl-converted"
+SPLITS_ROOT = NUMERIC_INPUTS / "03-splits"
 
 VALID_SPLITS = ("prompt", "dev", "test")
 

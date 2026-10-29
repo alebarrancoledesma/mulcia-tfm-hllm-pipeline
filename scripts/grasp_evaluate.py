@@ -20,11 +20,14 @@ import time
 import traceback
 
 ROOT = Path(__file__).resolve().parents[1]
-GRASP = ROOT.parent / 'mulcia-tfm-grasp'
-DEFAULT = ROOT / 'experiments/grasp-evaluations'
-SELECT_CASES = {'E': ['E-n23-k3', 'E-n33-k4', 'E-n51-k5', 'E-n76-k14', 'E-n101-k8'],
-                'P': ['P-n16-k8', 'P-n23-k8', 'P-n50-k10', 'P-n76-k4', 'P-n101-k4']}
-FINAL_CASES = {'E': ['E-n30-k3', 'E-n22-k4'], 'P': ['P-n19-k2', 'P-n40-k5']}
+GRASP = Path(os.environ.get('TFM_GRASP_DIR', ROOT.parent / 'mulcia-tfm-grasp')).resolve()
+ARTIFACTS = Path(os.environ.get('TFM_ARTIFACTS_DIR', ROOT.parent / 'mulcia-tfm-artifacts')).resolve()
+SELECTION = Path(os.environ.get('TFM_GRASP_SELECTION_DIR', ROOT / 'outputs/grasp/selection')).resolve()
+DEFAULT = ROOT / 'outputs/grasp/cross-evaluation'
+GRASP_INPUTS = ARTIFACTS / 'inputs/03-grasp'
+PROTOCOL = json.loads((GRASP_INPUTS / '02-protocol/protocol.json').read_text(encoding='utf-8'))
+SELECT_CASES = PROTOCOL['selection']
+FINAL_CASES = PROTOCOL['final']
 BASE_HASH = 'fb28997aaf3b251e947ac0b57cd00f7a9341d607af686e5282d1447ab579217a'
 FIELDS = ['phase', 'family', 'candidate', 'instance', 'solved', 'runtime', 'cost',
           'first_solution_time', 'first_solution_cost', 'time_to_best', 'iterations',
@@ -45,7 +48,11 @@ def source(candidate):
     if candidate == 'baseline':
         return GRASP / 'src/heuristic.py'
     family, number = candidate.split('-')
-    return ROOT / f'experiments/grasp-{family}/{number}/out.py'
+    return SELECTION / family / number / 'out.py'
+
+
+def instance_file(name):
+    return GRASP_INPUTS / '01-instances' / f'{name}.vrp'
 
 
 def candidates(family):
@@ -159,7 +166,7 @@ def smoke(candidate):
             samples.append((inst, [[]], inst.customers(), 0, customer, 0))
     family = 'E' if candidate == 'baseline' else candidate[0]
     for case in SELECT_CASES[family]:
-        inst = read_vrp(str(GRASP / f'src/input/{case}.vrp'))
+        inst = read_vrp(str(instance_file(case)))
         for customer in inst.customers():
             if inst.demands[customer] <= inst.capacity:
                 samples.append((inst, [[]], inst.customers(), 0, customer, 0))
@@ -197,7 +204,7 @@ def worker(args):
         save(args.result, smoke(args.candidate))
     else:
         from src.cvrp import read_vrp
-        instance = read_vrp(str(GRASP / f'src/input/{args.instance}.vrp'), alpha=args.alpha)
+        instance = read_vrp(str(instance_file(args.instance)), alpha=args.alpha)
         metrics, solution = execute(args.candidate, instance, args.time_limit, args.seed)
         save(args.result, metrics)
         print('METRICS', json.dumps(metrics, allow_nan=False), flush=True)
@@ -230,8 +237,8 @@ def configuration(args):
     cases = {args.family: SELECT_CASES[args.family]} if args.mode == 'evaluate' else FINAL_CASES
     paths = [source(c) for f in families for c in candidates(f)]
     paths += list((GRASP / 'src').glob('*.py'))
-    paths += [GRASP / f'src/input/{case}.vrp' for group in (*SELECT_CASES.values(), *FINAL_CASES.values()) for case in group]
-    paths += [Path(__file__).resolve()]
+    paths += [instance_file(case) for group in (*SELECT_CASES.values(), *FINAL_CASES.values()) for case in group]
+    paths += [GRASP_INPUTS / '02-protocol/protocol.json', Path(__file__).resolve()]
     assert digest(source('baseline')) == BASE_HASH, 'baseline changed'
     return dict(stage=args.mode, family=args.family, seed=args.seed, alpha=args.alpha, time_limit=args.time_limit,
                 external_timeout=args.external_timeout, cases=cases,
@@ -451,7 +458,7 @@ def publish(args, rows):
 def cross_winners(args):
     winners = {}
     for family in SELECT_CASES:
-        folder = ROOT / f'experiments/grasp-{family}'
+        folder = SELECTION / family
         dev_args = argparse.Namespace(**vars(args))
         dev_args.mode, dev_args.family = 'evaluate', family
         dev_args.output, dev_args.selected = folder, candidates(family)
@@ -492,11 +499,11 @@ def evaluate(args):
         raise ValueError('all generated candidates invalid; stopping before trials')
     schedule = FINAL_CASES if winners else {args.family: SELECT_CASES[args.family]}
     finished = {(r['family'], r['candidate'], r['instance']) for r in rows}
-    ranks = {f: digest(ROOT / f'experiments/grasp-{f}/ranking.csv') for f in winners or {}}
+    ranks = {f: digest(SELECTION / f / 'ranking.csv') for f in winners or {}}
     for family, cases in schedule.items():
         for case in cases:
             for candidate in args.selected:
-                if configuration(args) != config or any(digest(ROOT / f'experiments/grasp-{f}/ranking.csv') != h for f, h in ranks.items()):
+                if configuration(args) != config or any(digest(SELECTION / f / 'ranking.csv') != h for f, h in ranks.items()):
                     raise ValueError('configuration changed during experiment')
                 if (family, candidate, case) in finished:
                     continue
@@ -534,7 +541,7 @@ def main():
         parser.error('cross evaluates both families; omit --family')
     if args.mode in ('evaluate', 'cross') and (args.seed, args.alpha, args.time_limit) != (1, 0.3, 300):
         parser.error('protocol requires seed=1, alpha=0.3, time-limit=300')
-    args.output = (args.output or (ROOT / f'experiments/grasp-{args.family}' if args.mode == 'evaluate' else DEFAULT)).resolve()
+    args.output = (args.output or (SELECTION / args.family if args.mode == 'evaluate' else DEFAULT)).resolve()
     if args.mode.endswith('worker'):
         worker(args)
     else:

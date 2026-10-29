@@ -1,13 +1,13 @@
 """Genera N candidatos en paralelo con OpenAI gpt-5.6-sol + main_prompt.
 
-Cada candidato va a experiments/<EXP>/01/, 02/, ... con:
+Cada candidato va a outputs/numeric-planning/<EXP>/01/, 02/, ... con:
     out.rs       — código Rust
     out.json     — what / why / ...
     prompt.md    — prompt enviado al LLM
 
 Uso:
-    uv run python -u scripts/gen_candidates.py experiment001 --split data/splits/P/prompt.json
-    uv run python -u scripts/gen_candidates.py experiment002 --split data/splits/E/prompt.json
+    uv run python -u scripts/gen_candidates.py experiment001 --split P/prompt
+    uv run python -u scripts/gen_candidates.py experiment002 --split E/prompt
     uv run python -u scripts/gen_candidates.py experiment002 --split E/prompt --n 10
 """
 
@@ -18,7 +18,7 @@ import sys
 import time
 from pathlib import Path
 
-from hllm_pipeline.data import domain_path, instance_path
+from hllm_pipeline.data import domain_path, instance_path, split_path
 from hllm_pipeline.llm import openai_generate, prompt_gen
 from hllm_pipeline.utils import read_text_file, write_file, write_json
 
@@ -39,9 +39,9 @@ def resolve_split(spec: str) -> dict:
             path = alt
         elif "/" in spec or "\\" in spec:
             family, split = spec.replace("\\", "/").split("/", 1)
-            path = PROJECT_ROOT / "data" / "splits" / family / f"{split}.json"
+            path = split_path(family, split)
         else:
-            path = PROJECT_ROOT / "data" / "splits" / spec / "prompt.json"
+            path = split_path(spec, "prompt")
     if not path.is_file():
         raise FileNotFoundError(f"split no encontrado: {spec}")
     with open(path, encoding="utf-8") as f:
@@ -102,21 +102,27 @@ def save_candidate(out_dir: Path, prompt: str, raw: str) -> bool:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("experiment", help="Nombre de la carpeta, e.g. experiment001")
+    parser.add_argument("experiment", help="Nombre de la ejecución")
     parser.add_argument(
         "--split",
-        default="data/splits/P/prompt.json",
-        help="JSON de split o atajo P/prompt, E/prompt (default: data/splits/P/prompt.json)",
+        default="P/prompt",
+        help="JSON de split o atajo P/prompt, E/prompt (default: P/prompt)",
     )
     parser.add_argument("--n",   type=int, default=10, help="Número de candidatos (default 10)")
     parser.add_argument("--rpm", type=int, default=20, help="Requests per minute para el sleep (default 20)")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=PROJECT_ROOT / "outputs" / "numeric-planning",
+        help="Directorio que contendrá la carpeta de la ejecución",
+    )
     args = parser.parse_args()
 
     split = resolve_split(args.split)
     family = split["family"]
     instance_ids = split["instances"]
 
-    out_root = PROJECT_ROOT / "experiments" / args.experiment
+    out_root = args.output.resolve() / args.experiment
     n        = args.n
     rpm      = args.rpm
     sleep_s  = 60.0 / rpm
